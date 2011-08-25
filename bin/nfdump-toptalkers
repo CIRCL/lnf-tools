@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2011 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2011 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use nfdump;
+use Data::Dumper;
+use nfdumptoptalkers;
+use Getopt::Long;
+
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-toptalkers -s <ip address>
+
+Use a nfdump output as input (long format) and extract the top talkers related
+to an address. The data is read from standard input. The top talkers are
+classified with the exchanged volume. A list is displayed on standard output.
+
+OPTIONS
+
+    -h Displays this screen
+    -s Specify the IP address
+
+EXAMPLE
+
+    nfdump-toptalkers -s 10.0.0.1
+
+OUTPUT
+
+    #Rank Hostname numberofbytes
+
+    1 10.10.10.1 200000
+    2 10.10.10.2 120000
+    3 10.11.10.1 99810
+    4 10.11.11.2 11192
+
+
+The first column displays the rank, the second column displays the IP address
+and the last column shows the number of exchanged bytes.
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPL
+
+END
+
+exit($code);
+
+}
+
+my $isHelp = undef;
+my $source=undef;
+my $result = GetOptions ("source=s"=>\$source) or usage(1);
+
+
+if (!defined($source)){
+    &usage(1);
+}
+my $handler = nfdumphandler->new($source);
+my $parser=nfdump->new($handler);
+$parser->parse();
+$handler->print_top_talkers;
+exit(0);
