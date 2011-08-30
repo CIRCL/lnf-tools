@@ -67,7 +67,7 @@ sub convert_timestamp{
     $mon--;
     my $wday=0;
     my $yday=0;
-    return mktime ($sec, $min, $hour, $day, $mon, $year, $wday, $yday)
+    return mktime ($sec, $min, $hour, $day, $mon, $year, $wday, $yday)."";
 }
 
 sub parse_line{
