@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2011 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2011 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use nfdump;
+use nfdumpindex;
+use Data::Dumper;
+use Getopt::Long;
+use Redis;
+
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-indexer -s source identifier
+
+
+Use a nfdump output as input (long format) and create indexes denoting
+which IP address is in which file(s)
+
+OPTIONS
+
+    -h Displays this screen
+    -s Specify the source. This is can be a filename or a timestamp.
+       Note: The data is still read from standard input
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+my $isHelp = undef;
+my $source=undef;
+my $result = GetOptions ("source=s"=>\$source, "help"=>\$isHelp) or usage(1);
+
+if (!defined($source)){
+    &usage(1);
+}
+
+
+if (defined($isHelp)){
+    &usage(0);
+}
+
+# Initalize connection to redis server
+my $redis = Redis->new;
+#Keep an openconnection all the time
+
+#If there is an error related to redis this program will be aborted by the
+#redis library
+my $sourceIndex = $redis->incr('c:fid');
+
+#Create the source index
+$redis->set("f:$source",$sourceIndex);
+$redis->set("d:$sourceIndex","$source");
+
+#Setup the handler
+my $handler = nfdumpindex->new($redis, $source);
+my $parser=nfdump->new($handler);
+$parser->parse;
+
