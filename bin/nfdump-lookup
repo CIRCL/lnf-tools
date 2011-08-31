@@ -1,0 +1,104 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2011 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2011 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use Data::Dumper;
+use Getopt::Long;
+use Redis;
+
+sub get_filename
+{
+    my ($redis, $index) = @_;
+    my $k = "d:$index";
+    my $filename=$redis->get($k);
+    return $filename;
+}
+
+
+sub dissect_filename
+{
+    my ($filename) = @_;
+    my $out = "";
+    if ($filename=~/^.*nfcapd\.(\d+)/){
+        my $str = $1;
+        my $year =substr($str,0,4);
+        my $month =substr($str,4,2);
+        my $day = substr($str,6,2);
+        my $hour =substr($str,8,2);
+        my $min = substr($str,10,2);
+        $out="$year-$month-$day $hour:$min";
+    }
+    return $out;
+}
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-lookup -i <ip_address>
+
+
+Does a look up of an IP address in the nfdump index and displays the files
+where they are in.
+
+OPTIONS
+
+    -h Displays this screen
+    -i IP address of the host
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+my $isHelp = undef;
+my $address = undef;
+my $result = GetOptions ("ipaddress=s"=>\$address, "help"=>\$isHelp) or usage(1);
+
+if (!defined($address)){
+    &usage(1);
+}
+
+
+if (defined($isHelp)){
+    &usage(0);
+}
+
+#TODO check input of the address can be IPv6 or IPv4
+
+# Initalize connection to redis server
+my $redis = Redis->new;
+#Keep an openconnection all the time
+my $kz="i:$address";
+my @indices = $redis->smembers($kz);
+print "#IP address filename approx. year-month-day hour:min\n";
+foreach my $k (@indices){
+    my $filename = &get_filename($redis, $k);
+    my $approxts=&dissect_filename($filename);
+    print "$address $filename $approxts\n";
+}
+
+exit(0);
