@@ -79,7 +79,7 @@ $redis->set("f:$source",$sourceIndex);
 $redis->set("d:$sourceIndex","$source");
 
 #Setup the handler
-my $handler = nfdumpindex->new($redis, $source);
+my $handler = nfdumpindex->new($redis, $sourceIndex);
 my $parser=nfdump->new($handler);
 $parser->parse;
 
