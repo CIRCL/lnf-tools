@@ -27,7 +27,7 @@ use IO::Handle;
 sub new{
     my ($type, $processor) = @_;
     my $self={};
-    $self->{'header'}="Date flow start          Duration Proto      Src IP Addr:Port          Dst IP Addr:Port   Flags Tos  Packets    Bytes      pps      bps    Bpp Flows";
+    $self->{'header'}="Date flow start Duration Proto Src IP Addr:Port Dst IP Addr:Port Flags Tos Packets Bytes pps bps Bpp Flows";
     $self->{'endreached'} = 0;
     $self->{'processor'} = $processor;
     bless $self, $type;
@@ -89,6 +89,7 @@ sub parse_line{
         return {};
     }
     chomp($line);
+    $line=~s/\s+/ /g;
     if ($cnt==1){
         if ($line ne $self->{'header'}){
             print "Header does not match, abort\n";
@@ -99,7 +100,6 @@ sub parse_line{
         $line=~s/ M/M/g;
         $line=~s/ K/K/g;
         $line=~s/ G/G/g;
-        $line=~s/\s+/ /g;
         my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
         my ($time,$ms) = split('\.',$stime);
         my $entry = {};
