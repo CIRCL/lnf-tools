@@ -36,9 +36,6 @@ sub new{
 
 sub process {
     my ($self,$fields) = @_;
-    if (length(keys %{$fields}) == 0){
-        print "Got empty hash\n";
-    }
     if ($fields->{'srcaddr'} ne ""){
         $self->{ 'redis'}->sadd("i:$fields->{'srcaddr'}", $self->{'sourceIndex'});
     }
