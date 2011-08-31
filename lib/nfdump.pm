@@ -70,6 +70,17 @@ sub convert_timestamp{
     return mktime ($sec, $min, $hour, $day, $mon, $year, $wday, $yday)."";
 }
 
+sub parse_addr
+{
+    my ($self,$str) = @_;
+    my $cnt = ($str =~ tr/://);
+    if ($cnt > 1){
+        #Got more than  1 ':' hence it might be an IPv6 address
+        return split('\.', $str);
+    }
+    #If it is not IPv6 address it should be an Ipv4 address
+    return  split(':',$str);
+}
 sub parse_line{
     my ($self,$line,$cnt)=@_;
     if ($line=~/^Summary/){
@@ -89,8 +100,6 @@ sub parse_line{
         $line=~s/ K/K/g;
         $line=~s/ G/G/g;
         $line=~s/\s+/ /g;
-        #print "$header\n";
-        #print "line:#$line#\n";
         my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
         my ($time,$ms) = split('\.',$stime);
         my $entry = {};
@@ -99,10 +108,10 @@ sub parse_line{
         $entry->{'startDate'}->{'milliseconds'} = $ms;
         $entry->{'duration'}  = $duration;
         $entry->{'proto'}     = $proto;
-        my ($addr, $port) = split(':',$src);
+        my ($addr, $port) = $self->parse_addr($src);
         $entry->{'srcaddr'} = $addr;
         $entry->{'srcport'} = $port;
-        my ($addr, $port) = split(':',$dst);
+        my ($addr, $port) = $self->parse_addr($dst);
         $entry->{'dstaddr'} = $addr;
         $entry->{'dstport'} = $port;
         $entry->{'flags'} = $flags;
