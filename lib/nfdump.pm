@@ -76,7 +76,7 @@ sub parse_addr
     my $cnt = ($str =~ tr/://);
     if ($cnt > 1){
         #Got more than  1 ':' hence it might be an IPv6 address
-        return split('\.', $str);
+        return split('\.', $str,2);
     }
     #If it is not IPv6 address it should be an Ipv4 address
     return  split(':',$str);
