@@ -19,7 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use nfdump;
-use Test::Simple tests => 16;
+use Test::Simple tests => 45;
 use strict;
 use Data::Dumper;
 
@@ -46,11 +46,44 @@ ok($fields->{'startDate'}->{'milliseconds'} eq '344', "IPv4TCP0: Test millisecon
 ok($fields->{'srcport'} eq 3403, "IPv4TCP0: Test srcport");
 ok($fields->{'bpp'} eq '97',"IPv4TCP0: Test bpp");
 
-#This line breaks the parser
-#TODO fix it
-#my $t1=<<END;
-#2011-08-30 12:33:02.522     0.000 UDP           1234:12a:beef:0:216:3aff:fe0d:6.40774 ->                     abc1:e43:a23e::1:33.53    ......   0        1       90        0        0     90     1
-#END
-#
-#$fields=$parser->parse_line($t1);
-#print Dumper($fields);
+my $t1=<<END;
+2011-08-30 12:33:02.522     0.000 UDP           1234:12a:beef:0:216:3aff:fe0d:6.40774 ->                     abc1:e43:a23e::1:33.53    ......   1        2       33        4        5     66     7
+END
+
+$fields=$parser->parse_line($t1);
+ok($fields->{'flows'} eq '7', 'UDPv6: Test flows');
+ok($fields->{'bpp'}  eq '66','UDPv6: Test bpp');
+ok($fields->{'bps'} eq '5', 'UDPv6: Test bps');
+ok($fields->{'pps'} eq '4', 'UDPv6: Test pps');
+ok($fields->{'bytes'} eq '33', 'UDPv6: Test bytes');
+ok($fields->{'packets'} eq '2','UDPv6: Test packets');
+ok($fields->{'tos'} eq '1','UDPv6: Test TOS');
+ok($fields->{'startDate'}->{'epoch'} eq '1314700382', "UDPv6: Test epoch timestamp");
+ok($fields->{'startDate'}->{'milliseconds'} eq '522', "UDPv6: Test milliseconds");
+ok($fields->{'duration'} eq '0.000', "UDPv6: Test duration");
+ok($fields->{'srcaddr'} eq '1234:12a:beef:0:216:3aff:fe0d:6','UDPv6: Test srcaddr');
+ok($fields->{'srcport'} eq '40774', "UDPv6: Test src port");
+ok($fields->{'dstaddr'} eq 'abc1:e43:a23e::1:33', 'UDPv6: Test dstaddr');
+ok($fields->{'dstport'} eq '53', 'UDPv6: Test dstport');
+
+my $t=<<END;
+2011-08-31 08:38:15.786     0.000 ICMP6                  abc1:be0:1:1::1234:b24.0     ->                 1234:3456:77::3321:1234.4.129 ......   0        1      104        4        6    104     2
+END
+
+$fields=$parser->parse_line($t);
+ok($fields->{'flows'} eq '2',"ICMP6: Test flows");
+ok($fields->{'bpp'} eq '104',"ICMP6: Test bpp");
+ok($fields->{'bps'} eq '6', "ICMP6: Test pps");
+ok($fields->{'pps'} eq '4',"ICMP6: Test pps");
+ok($fields->{'bytes'} eq '104',"ICMP6: Test bytes");
+ok($fields->{'packets'} eq '1', "ICMP6: Test packets");
+ok($fields->{'tos'} eq '0',"ICMP6: Test tos");
+ok($fields->{'flags'} eq '......',"ICMP6: test flags");
+#TODO add in doc that the ICMP code is stored in the port field
+ok($fields->{'dstport'} eq '4.129',"ICMP6: Test dstport");
+ok($fields->{'dstaddr'} eq '1234:3456:77::3321:1234', "ICMP6: Test dstaddr");
+ok($fields->{'srcport'} eq '0',"ICMP6: Test srcport");
+ok($fields->{'srcaddr'} eq 'abc1:be0:1:1::1234:b24',"ICMP6: Test srcaddr");
+ok($fields->{'duration'} eq '0.000', 'ICMPv6: Test duration');
+ok($fields->{'startDate'}->{'milliseconds'} eq '786', "ICMP6: Test milliseconds");
+ok($fields->{'startDate'}->{'epoch'} eq '1314772695', "ICMP6: Test epoch");
