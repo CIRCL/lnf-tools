@@ -23,9 +23,10 @@ use strict;
 use POSIX;
 use Data::Dumper;
 use IO::Handle;
+use Redis;
 
 sub new{
-    my ($type, $processor) = @_;
+    my ($type, $processor, $redis) = @_;
     my $self={};
     $self->{'header'}="Date flow start Duration Proto Src IP Addr:Port Dst IP Addr:Port Flags Tos Packets Bytes pps bps Bpp Flows";
     $self->{'endreached'} = 0;
@@ -139,6 +140,36 @@ sub parse{
         $self->{'processor'}->process($fields);
         if ($self->{'endreached'} == 1){
             last;
+        }
+    }
+    $io->close();
+}
+
+#Read lines from nfdump and put them in a queue
+#TODO Check integrity of the flows
+sub queue_lines
+{
+    my ($self, $identifier, $redis, $bufsize) = @_;
+
+    if (!defined($bufsize)){
+        $bufsize=1;
+    }
+
+    my $kz = "n:$identifier";
+    my $io = IO::Handle->new();
+    my @buf;
+    my $cnt = 0;
+
+    $io->fdopen(fileno(STDIN),"r");
+
+    while (my $line=$io->getline()){
+        $cnt++;
+        chomp($line);
+        push(@buf,$line);
+        if (($cnt % $bufsize) == 0){
+            #Flush buffer
+            $redis->lpush($kz, @buf);
+            @buf = ();
         }
     }
     $io->close();
