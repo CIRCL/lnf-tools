@@ -81,6 +81,7 @@ $redis->set("f:$source",$sourceIndex);
 #The line below does not work
 my $k="\"d:$sourceIndex\"";
 $redis->set("f:$source",$sourceIndex);
+$redis->set("d:$sourceIndex",$source);
 
 #Setup the handler
 my $parser=nfdump->queue_lines($sourceIndex, $redis, $buffer_size);
