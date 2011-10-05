@@ -19,7 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use nfdump;
-use Test::Simple tests => 45;
+use Test::Simple tests => 60;
 use strict;
 use Data::Dumper;
 
@@ -87,3 +87,24 @@ ok($fields->{'srcaddr'} eq 'abc1:be0:1:1::1234:b24',"ICMP6: Test srcaddr");
 ok($fields->{'duration'} eq '0.000', 'ICMPv6: Test duration');
 ok($fields->{'startDate'}->{'milliseconds'} eq '786', "ICMP6: Test milliseconds");
 ok($fields->{'startDate'}->{'epoch'} eq '1314772695', "ICMP6: Test epoch");
+
+my $t=<<END;
+2011-08-30 01:52:32.922    66.816 GRE                              10.11.12.13:0     ->                          13.12.11.10:0     ......   0     1221    1.7 M       18   205420   1405     1
+END
+
+$fields=$parser->parse_line($t);
+ok($fields->{'startDate'}->{'epoch'} eq '1314661952',"GRE test timestamp");
+ok($fields->{'startDate'}->{'milliseconds'} eq '922',"GRE test milli");
+ok($fields->{'duration'} eq '66.816',"GRE test duration");
+ok($fields->{'proto'} eq 'GRE');
+ok($fields->{'srcaddr'} eq '10.11.12.13', "GRE test srcaddr");
+ok($fields->{'srcport'} eq '0', "GRE test src port");
+ok($fields->{'dstaddr'} eq '13.12.11.10', "GRE dstaddr");
+ok($fields->{'dstport'} eq '0',"GRE test dst port");
+ok($fields->{'tos'} eq '0','GRE test tos');
+ok($fields->{'packets'} eq '1221', "GRE test packets");
+ok($fields->{'bytes'} eq '1700000',"GRE test bytes");
+ok($fields->{'pps'} eq '18',"GRE test pps");
+ok($fields->{'bps'} eq '205420', "GRE test bps");
+ok($fields->{'bpp'} eq '1405', "GRE test bpp");
+ok($fields->{'flows'} eq '1','GRE test flows');
