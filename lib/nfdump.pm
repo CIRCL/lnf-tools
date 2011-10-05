@@ -100,7 +100,10 @@ sub parse_line{
         #FIXME dirty hack for fixing the alignment
         $line=~s/ M/M/g;
         $line=~s/ K/K/g;
-        $line=~s/ G/G/g;
+        #FIXME dirty hack to avoid the GRE bug
+        if ($line!~/GRE/){
+            $line=~s/ G/G/g;
+        }
         my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
         my ($time,$ms) = split('\.',$stime);
         my $entry = {};
