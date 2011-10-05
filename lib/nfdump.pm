@@ -86,7 +86,6 @@ sub parse_line{
     my ($self,$line,$cnt)=@_;
     if ($line=~/^Summary/){
         $self->{'endreached'} = 1;
-        print "End reached\n";
         return {};
     }
     chomp($line);
