@@ -1,4 +1,5 @@
 /*
+ *  Extended in 2011 by Gerard Wagener - CIRCL - Smile g.i.e.
  *  Copyright (c) 2009, Peter Haag
  *  Copyright (c) 2004-2008, SWITCH - Teleinformatikdienste fuer Lehre und Forschung
  *  All rights reserved.
@@ -124,10 +125,23 @@ int redis_server_port = 6379;
 #include "nffile_inline.c"
 
 static void usage(char *name) {
-        printf("Create index in Redis describing the relation ship file  - IPaddress\n");
-		printf("usage %s [options] \n"
-					"-r\t\tread input from file\n"
-					, name);
+        printf("Create index in redis describing the relationship file  - IPaddress\n");
+		printf("\nusage %s -r [options] \n", name);
+		printf("\t-r\t\tread input from file\n");
+        printf("\t[-s]\t\tspecify the redis server name or IP address\n");
+        printf("\t[-p]\t\tspecify the redis server port\n");
+        printf("\nDESCRIPTION\n\n");
+        printf("In redis keys are created such as n4:10.0.0.1. Each key has a set as value.\n");
+        printf("An IP address always starts with n followed by 4 (IPv4) or by 6 (IPv6). This\n");
+        printf("prefix is followed by the string representation of the IP address. The\n");
+        printf("associated set contains numbers such as 1,2,3... where each number is the\n");
+        printf("index of a file name. A set can be queried in redis with the SMEMBERS command.\n");
+        printf("The associated filename can be queried with the command GET d:x where x is the\n");
+        printf("index (number) in the queried set.\n");
+        printf("\n\nAUTHORS\n\n");
+        printf("Originally written by Peter Haag as example and extended with the indexing \n");
+        printf("features by Gerard Wagener - CIRCL\n");
+        printf("gerard dot wagener at circl.lu\n");
 } /* usage */
 
 
