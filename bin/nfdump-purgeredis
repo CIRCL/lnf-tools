@@ -1,0 +1,79 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2011 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2011 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use Data::Dumper;
+use Getopt::Long;
+use Redis;
+
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-purgeredis
+
+Remove all keys related to nfdump-indexer or nfreader
+
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+my $isHelp = undef;
+my $result = GetOptions ("help"=>\$isHelp) or usage(1);
+
+if (defined($isHelp)){
+    &usage(0);
+}
+
+# Initalize connection to redis server
+my $redis = Redis->new;
+
+#Delete all IP addresses
+my @data = $redis->keys("n*");
+foreach my $k (@data){
+    $redis->del($k);
+}
+
+#Delete all filenames
+my @data=$redis->keys("f:*");
+foreach my $k (@data){
+    $redis->del($k);
+}
+
+#Delete all reverse filenames
+my @data = $redis->keys("d:*");
+foreach my $k (@data){
+    $redis->del($k);
+}
+
+#delete counter
+
+$redis->del("c:fid");
+
+exit(0);
