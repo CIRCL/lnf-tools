@@ -83,7 +83,6 @@
 #include "hiredis.h"
 #include "glib.h"
 #define BUFFSIZE 1048576
-#define MAX_BUFFER_SIZE 104857600
 
 struct tuple{
     unsigned long long l1;
