@@ -116,6 +116,8 @@ redisReply *reply;
 int rbidx;
 char dontcare = 0;
 GHashTable* ght;
+char* redis_server_address = "127.0.0.1";
+int redis_server_port = 6379;
 
 /* Functions */
 
@@ -269,11 +271,10 @@ int	v1_map_done = 0;
 
 } // End of process_data
 
-void connect_to_redisServer(char* hostname, char* port)
+void connect_to_redisServer(void)
 {
    struct timeval timeout = { 1, 500000 }; // 1.5 seconds
-   //FIXME Pass this information via command line
-   g_rctx = redisConnectWithTimeout((char*)"127.0.0.1", 6379, timeout);
+   g_rctx = redisConnectWithTimeout(redis_server_address, redis_server_port, timeout);
 
     if (g_rctx->err) {
         printf("Connection error: %s\n", g_rctx->errstr);
@@ -473,57 +474,47 @@ static void index_record(void* record, char *s )
 
 
 int main( int argc, char **argv ) {
-char 		*rfile, *Rfile, *Mdirs;
+char 		*rfile;
 int			c;
-    // TODO update command line
-	rfile = Rfile = Mdirs = NULL;
-	while ((c = getopt(argc, argv, "L:r:M:R:")) != EOF) {
+	rfile =  NULL;
+	while ((c = getopt(argc, argv, "p:hr:s:")) != EOF) {
 		switch (c) {
 			case 'h':
 				usage(argv[0]);
 				exit(0);
 				break;
-				break;
-			case 'L':
-				if ( !InitLog("argv[0]", optarg) )
-					exit(255);
-				break;
+			case 's':
+                redis_server_address = optarg;
+                break;
 			case 'r':
 				rfile = optarg;
-				if ( strcmp(rfile, "-") == 0 )
-					rfile = NULL;
 				break;
-			case 'M':
-				Mdirs = optarg;
-				break;
-			case 'R':
-				Rfile = optarg;
-				break;
-			default:
+			case 'p':
+                redis_server_port = atoi(optarg);
+			    break;
+            default:
 				usage(argv[0]);
 				exit(0);
 		}
 	}
 
-	if ( rfile && Rfile ) {
-		fprintf(stderr, "-r and -R are mutually exclusive. Please specify either -r or -R\n");
-		exit(255);
-	}
-	if ( Mdirs && !(rfile || Rfile) ) {
-		fprintf(stderr, "-M needs either -r or -R to specify the file or file list. Add '-R .' for all files in the directories.\n");
-		exit(255);
-	}
+    if (!rfile){
+        fprintf(stderr, "Error: no nfcapd file was specified\n");
+        usage(argv[0]);
+        exit(1);
+    }
+
 
     ght = g_hash_table_new(addrhash, addreq);
     /* Make filename global to accessing in the indexing function */
     g_filename = rfile;
     /* Connect to redis server  and set file indexes*/
-    connect_to_redisServer(NULL,0);
+    connect_to_redisServer();
     set_file_indexes();
 
 	InitExtensionMaps(&extension_map_list);
 
-	SetupInputFileSequence(Mdirs, rfile, Rfile);
+	SetupInputFileSequence(NULL, rfile, NULL);
 
 	process_data();
 
