@@ -119,7 +119,7 @@ char dontcare = 0;
 GHashTable* ght;
 char* redis_server_address = "127.0.0.1";
 int redis_server_port = 6379;
-
+int cacheenable = 1;
 /* Functions */
 
 #include "nffile_inline.c"
@@ -373,6 +373,8 @@ inline int isInHashTable(TUPLE* key)
 inline void enqueue(unsigned long long l1, unsigned long long l2)
 {
     TUPLE* addr;
+    if (!cacheenable)
+        return;
     addr = malloc(sizeof(TUPLE));
     if (addr){
         addr->l1 = l1;
@@ -392,6 +394,8 @@ inline void enqueue(unsigned long long l1, unsigned long long l2)
 inline int checkqueue(unsigned long long l1, unsigned long long l2)
 {
     TUPLE *addr;
+    if (!cacheenable)
+        return 1;
     addr = malloc(sizeof(TUPLE));
     if (addr){
         addr->l1 = l1;
@@ -491,7 +495,7 @@ int main( int argc, char **argv ) {
 char 		*rfile;
 int			c;
 	rfile =  NULL;
-	while ((c = getopt(argc, argv, "p:hr:s:")) != EOF) {
+	while ((c = getopt(argc, argv, "p:hr:s:c")) != EOF) {
 		switch (c) {
 			case 'h':
 				usage(argv[0]);
@@ -506,6 +510,9 @@ int			c;
 			case 'p':
                 redis_server_port = atoi(optarg);
 			    break;
+            case 'c':
+                cacheenable=0;
+                break;
             default:
 				usage(argv[0]);
 				exit(0);
@@ -517,6 +524,7 @@ int			c;
         usage(argv[0]);
         exit(1);
     }
+    printf("Cache enable: %d\n", cacheenable);
 
 
     ght = g_hash_table_new(addrhash, addreq);

@@ -32,8 +32,8 @@ sub usage
 nfdump-indexer -s source identifier
 
 
-Use a nfdump output as input (long format) and create indexes denoting
-which IP address is in which file(s)
+Use nfdump output from a queue and dissect it and put it in an index
+denoting which IP address is in which file(s)
 
 OPTIONS
 
@@ -70,16 +70,28 @@ if (defined($isHelp)){
 my $redis = Redis->new;
 #Keep an openconnection all the time
 
-#If there is an error related to redis this program will be aborted by the
-#redis library
-my $sourceIndex = $redis->incr('c:fid');
-
+#Does a lookup of the filename as check
+my $idx=$redis->get("f:$source");
+if (!defined($idx)){
+    die "Could not find the filename index\n";
+}
+print "Processing index: $idx\n";
 #Create the source index
-$redis->set("f:$source",$sourceIndex);
-$redis->set("d:$sourceIndex","$source");
 
-#Setup the handler
-my $handler = nfdumpindex->new($redis, $sourceIndex);
-my $parser=nfdump->new($handler);
-$parser->parse;
+##Setup the handler
+my $handler = nfdumpindex->new($redis, $idx);
 
+my $qid="n:$idx";
+print "Queue identifier: $qid\n";
+my  $n = $redis->llen($qid) or die "Cannot get elements from the queue\n";
+print "DEBUG: Initial elements in the queue $n\n";
+
+my $nfd = nfdump->new;
+
+my $fields={};
+while ($n > 0){
+    my $line=$redis->lpop($qid);
+    $fields=$nfd->parse_line($line);
+    $handler->process($fields);
+    $n = $redis->llen($qid);
+}
