@@ -84,6 +84,8 @@
 #include "hiredis.h"
 #include "glib.h"
 #define BUFFSIZE 1048576
+/* Maximal number of errors that are tolerated until the program aborts */
+#define MAXERRORCNT 10
 
 struct tuple{
     unsigned long long l1;
@@ -120,6 +122,8 @@ GHashTable* ght;
 char* redis_server_address = "127.0.0.1";
 int redis_server_port = 6379;
 int cacheenable = 1;
+int error_counter = 0;
+
 /* Functions */
 
 #include "nffile_inline.c"
@@ -427,6 +431,12 @@ void store_address(char* addr)
          *      compare error code)
          */
     fprintf(stderr,"Cannot store address: %s\n",addr);
+    error_counter++;
+        if (error_counter > MAXERRORCNT){
+            fprintf(stderr,"Maximal error count reached, abort processing %s\n",
+                    g_filename);
+            exit(1);
+        }
     }
 }
 
