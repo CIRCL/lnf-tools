@@ -83,10 +83,14 @@
 #include "flist.h"
 #include "hiredis.h"
 #include "glib.h"
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #define BUFFSIZE 1048576
 /* Maximal number of errors that are tolerated until the program aborts */
 #define MAXERRORCNT 10
-
+#define MAXSOFTLIM 536870912000
+#define MAXHARDLIM 644245094400
 struct tuple{
     unsigned long long l1;
     unsigned long long l2;
@@ -505,6 +509,24 @@ static void index_record(void* record, char *s )
 int main( int argc, char **argv ) {
 char 		*rfile;
 int			c;
+struct rlimit rlim;
+
+/* Limit the memory consumption of this process
+ *  - soft limit 500 MB
+ *  - hard limit 600 MB
+ * If the limit is reached ENOMEM is returned and the throtteling mechanism
+ * activated resulting in a program abortion
+ */
+rlim.rlim_cur = MAXSOFTLIM;
+rlim.rlim_max = MAXHARDLIM;
+
+if (setrlimit(RLIMIT_AS, &rlim) < 0){
+    fprintf(stderr, "Resource limitation failed, abort %s\n",
+            strerror(errno));
+    exit(1);
+}
+
+
 	rfile =  NULL;
 	while ((c = getopt(argc, argv, "p:hr:s:c")) != EOF) {
 		switch (c) {
