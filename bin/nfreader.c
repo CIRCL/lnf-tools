@@ -305,11 +305,33 @@ void connect_to_redisServer(void)
     }
 }
 
+
+/*
+ * Checks if the filename is already indexed.
+ * @returns -1 if not index
+ * @returns > 0 the index of the filename
+ */
+
+int check_filename_in_redis(char* filename)
+{
+    int val;
+    val = -1;
+    reply = redisCommand(g_rctx,"GET f:%s", filename);
+    if (reply){
+        if (reply->type == REDIS_REPLY_STRING){
+            val = atoi(reply->str);
+            freeReplyObject(reply);
+        }
+    }
+    return val;
+}
+
 /*FIXME NULL seems not to be returned on errors and errstr is not set? */
 
 void set_file_indexes(void)
 {
-
+    if ((g_index=check_filename_in_redis(g_filename))>0)
+        return;
     /* Get the next index value */
     reply = redisCommand(g_rctx,"INCR c:fid");
     if (!reply)
