@@ -72,6 +72,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -586,7 +587,7 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 
     ght = g_hash_table_new(addrhash, addreq);
     /* Make filename global to accessing in the indexing function */
-    g_filename = rfile;
+    g_filename = basename(rfile);
     /* Connect to redis server  and set file indexes*/
     connect_to_redisServer();
     set_file_indexes();
