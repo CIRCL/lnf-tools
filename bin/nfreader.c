@@ -330,7 +330,10 @@ int check_filename_in_redis(char* filename)
 
 void set_file_indexes(void)
 {
-    if ((g_index=check_filename_in_redis(g_filename))>0)
+    int idx;
+
+    idx=check_filename_in_redis(g_filename);
+    if (idx > 0)
         return;
     /* Get the next index value */
     reply = redisCommand(g_rctx,"INCR c:fid");
