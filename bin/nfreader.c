@@ -130,6 +130,7 @@ static void usage(char *name) {
 		printf("\t-r\t\tread input from file\n");
         printf("\t[-s]\t\tspecify the redis server name or IP address\n");
         printf("\t[-p]\t\tspecify the redis server port\n");
+        printf("\t[-c]\t\tDisable local cache. The local cache needs 500MB of memory.\n");
         printf("\nDESCRIPTION\n\n");
         printf("In redis keys are created such as n4:10.0.0.1. Each key has a set as value.\n");
         printf("An IP address always starts with n followed by 4 (IPv4) or by 6 (IPv6). This\n");
@@ -425,7 +426,7 @@ void store_address(char* addr)
          *      Take care to not overwhelm the system (i.e. check and
          *      compare error code)
          */
-    fprintf(stderr,"Cannot store address: %s",addr);
+    fprintf(stderr,"Cannot store address: %s\n",addr);
     }
 }
 
@@ -524,7 +525,6 @@ int			c;
         usage(argv[0]);
         exit(1);
     }
-    printf("Cache enable: %d\n", cacheenable);
 
 
     ght = g_hash_table_new(addrhash, addreq);
