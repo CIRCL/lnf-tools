@@ -161,8 +161,25 @@ class RedixIndexerCore(object):
         syslog("Job with pid="+ str(pid) + " was killed and PID was removed")
         return False
 
+    #There mightbe some jobs running that such be terminated aswell when the
+    #daemon stops
+    #FIXME common code with previous tested function
+    def cleanup(self):
+        pid=self.getjobstate(self.redis)
+        if (pid > 0):
+            syslog("There is a remaining job killing it "+str(pid))
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError,e:
+            syslog(str(e))
+        self.redis.delete("nfpid")
+        syslog("Job with pid="+ str(pid) + " was killed and PID was removed during the cleanup")
+
+
     def run(self):
         r = redis.Redis()
+        #Set redis as attribute such that it is accessible
+        self.redis = r
         self.search_ridx_screen()
         while True:
             filename = r.lpop("toprocess")
@@ -182,11 +199,14 @@ if __name__ == '__main__':
     #FIXME Log level seems to not work in python wrapper?
     lg = openlog(sys.argv[0], LOG_PERROR | LOG_PID, LOG_DAEMON)
     syslog("Nfdump Indexer started")
+    x=None
     try:
         x = RedixIndexerCore()
         x.run()
     except Exception,e:
         syslog(str(e))
     except KeyboardInterrupt,e:
+        if (x != None):
+            x.cleanup()
         syslog("Nfdump indexer was manually stopped")
 exit(0)
