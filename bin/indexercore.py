@@ -190,6 +190,7 @@ class RedixIndexerCore(object):
                          +str(self.cfg_timeout) + " seconds")
                 time.sleep(self.cfg_timeout)
             else:
+                filename = os.path.basename(filename)
                 f = self.getfilename(filename)
                 self.dbg("Processing "+f)
                 #Launch the job in non blocking mode
