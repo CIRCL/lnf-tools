@@ -327,6 +327,30 @@ int check_filename_in_redis(char* filename)
     return val;
 }
 
+/*
+ * A daemon is usually executing this program. The PID of this program is
+ * stored in redis using the key nfpid. The daemon can then poll this pid
+ * and can eventually kill this program.
+ */
+void transmit_pid(void)
+{
+    reply = redisCommand(g_rctx,"SET nfpid %d",getpid());
+    if (!reply){
+        fprintf(stderr, "Could not tell the daemon my PID, abort ...\n");
+        exit(1);
+    }
+}
+
+/* Remove the key nfpid such that the daemon knows that the job is done */
+void remove_pid(void)
+{
+    reply = redisCommand(g_rctx,"DEL nfpid");
+    if (!reply){
+        fprintf(stderr, "Could not tell the daemon my PID, abort ...\n");
+        exit(1);
+    }
+}
+
 /*FIXME NULL seems not to be returned on errors and errstr is not set? */
 
 void set_file_indexes(void)
@@ -589,6 +613,9 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
     g_filename = basename(rfile);
     /* Connect to redis server  and set file indexes*/
     connect_to_redisServer();
+
+    transmit_pid();
+
     set_file_indexes();
 
 	InitExtensionMaps(&extension_map_list);
@@ -597,6 +624,7 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 
 	process_data();
 
-
+    /* Tell the daemon that the job is done */
+    remove_pid();
 	return 0;
 }
