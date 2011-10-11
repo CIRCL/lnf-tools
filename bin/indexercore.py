@@ -123,7 +123,7 @@ class RedixIndexerCore(object):
         cmd=cmd + self.cfg_prg + " -s " + self.cfg_redis_server  + " -p " +\
              str(self.cfg_redis_port) + " -r " + filename
 
-        if (self.cfg_localcache):
+        if (self.cfg_localcache == 0):
             cmd = cmd + " -c"
         #Launch the job in gnu screen
         self.dbg("Executing "+ cmd)
