@@ -126,6 +126,7 @@ class RedixIndexerCore(object):
         if (self.cfg_localcache):
             cmd = cmd + " -c"
         #Launch the job in gnu screen
+        self.dbg("Executing "+ cmd)
         os.system(cmd)
 
     def getjobstate(self, redis):
@@ -146,8 +147,8 @@ class RedixIndexerCore(object):
             self.dbg("Wake up")
             pid = self.getjobstate(redis)
             if (pid == 0):
-                self.dbg("Job with PID "+ str(pid) + " is done")
-                break
+                self.dbg("Job with PID is done")
+                return True
         #The job is still running
         self.dbg("The job "+str(pid) + " is still running going to kill it")
         try:
