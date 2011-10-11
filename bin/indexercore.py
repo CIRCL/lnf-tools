@@ -59,6 +59,8 @@ class RedixIndexerCore(object):
                 k = 'root_' + str(i)
                 dr = config.get('flowdirs',k)
                 self.cfg_flowdirs.append(dr)
+                if dr.endswith('/'):
+                    dr = dr[0:-1]
                 if (os.path.isdir(dr) == False):
                     syslog('Flow entry ' + dr  +
                                      ' is not a directory')
