@@ -86,7 +86,7 @@
 #include "glib.h"
 #include <sys/time.h>
 #include <sys/resource.h>
-
+#include <syslog.h>
 #define BUFFSIZE 1048576
 /* Maximal number of errors that are tolerated until the program aborts */
 #define MAXERRORCNT 10
@@ -194,15 +194,15 @@ int	v1_map_done = 0;
 			case NF_CORRUPT:
 			case NF_ERROR:
 				if ( ret == NF_CORRUPT )
-					fprintf(stderr, "Skip corrupt data file '%s': '%s'\n",GetCurrentFilename(), string);
+					syslog(LOG_ERR, "Skip corrupt data file '%s': '%s'\n",GetCurrentFilename(), string);
 				else
-					fprintf(stderr, "Read error in file '%s': %s\n",GetCurrentFilename(), strerror(errno) );
+					syslog(LOG_ERR, "Read error in file '%s': %s\n",GetCurrentFilename(), strerror(errno) );
 				// fall through - get next file in chain
 			case NF_EOF:
 				rfd = GetNextFile(rfd, 0, 0, NULL);
 				if ( rfd < 0 ) {
 					if ( rfd == NF_ERROR )
-						fprintf(stderr, "Read error in file '%s': %s\n",GetCurrentFilename(), strerror(errno) );
+						syslog(LOG_ERR, "Read error in file '%s': %s\n",GetCurrentFilename(), strerror(errno) );
 
 					// rfd == EMPTY_LIST
 					done = 1;
@@ -246,7 +246,7 @@ int	v1_map_done = 0;
 #endif
 
 		if ( block_header.id != DATA_BLOCK_TYPE_2 ) {
-			fprintf(stderr, "Can't process block type %u. Skip block.\n", block_header.id);
+			syslog(LOG_ERR, "Can't process block type %u. Skip block.\n", block_header.id);
 			continue;
 		}
 
@@ -276,7 +276,7 @@ int	v1_map_done = 0;
 				} // else map already known and flushed
 
 			} else {
-				fprintf(stderr, "Skip unknown record type %i\n", flow_record->type);
+				syslog(LOG_ERR, "Skip unknown record type %i\n", flow_record->type);
 			}
 
 			// Advance pointer by number of bytes for netflow record
@@ -301,7 +301,7 @@ void connect_to_redisServer(void)
    g_rctx = redisConnectWithTimeout(redis_server_address, redis_server_port, timeout);
 
     if (g_rctx->err) {
-        fprintf(stderr, "Connection error: %s\n", g_rctx->errstr);
+        syslog(LOG_ERR, "Connection error: %s\n", g_rctx->errstr);
         exit(1);
     }
 }
@@ -336,7 +336,7 @@ void transmit_pid(void)
 {
     reply = redisCommand(g_rctx,"SET nfpid %d",getpid());
     if (!reply){
-        fprintf(stderr, "Could not tell the daemon my PID, abort ...\n");
+        syslog(LOG_ERR, "Could not tell the daemon my PID, abort ...\n");
         exit(1);
     }
 }
@@ -346,7 +346,7 @@ void remove_pid(void)
 {
     reply = redisCommand(g_rctx,"DEL nfpid");
     if (!reply){
-        fprintf(stderr, "Could not tell the daemon my PID, abort ...\n");
+        syslog(LOG_ERR, "Could not tell the daemon my PID, abort ...\n");
         exit(1);
     }
 }
@@ -382,7 +382,7 @@ void set_file_indexes(void)
     return;
 
 error:
-    fprintf(stderr,"Connection error: %s\n", g_rctx->errstr);
+    syslog(LOG_ERR,"Connection error: %s\n", g_rctx->errstr);
     exit(1);
 }
 
@@ -483,10 +483,10 @@ void store_address(char* addr)
          *      Take care to not overwhelm the system (i.e. check and
          *      compare error code)
          */
-    fprintf(stderr,"Cannot store address: %s\n",addr);
+    syslog(LOG_ERR,"Cannot store address: %s\n",addr);
     error_counter++;
         if (error_counter > MAXERRORCNT){
-            fprintf(stderr,"Maximal error count reached, abort processing %s\n",
+            syslog(LOG_ERR, "Maximal error count reached, abort processing %s\n",
                     g_filename);
             exit(1);
         }
@@ -560,6 +560,9 @@ char 		*rfile;
 int			c;
 struct rlimit rlim;
 
+
+/* Establish syslog channel */
+openlog(argv[0], LOG_PERROR | LOG_PID, LOG_DAEMON);
 /* Limit the memory consumption of this process
  *  - soft limit 500 MB
  *  - hard limit 600 MB
@@ -570,7 +573,7 @@ rlim.rlim_cur = MAXSOFTLIM;
 rlim.rlim_max = MAXHARDLIM;
 
 if (setrlimit(RLIMIT_AS, &rlim) < 0){
-    fprintf(stderr, "Resource limitation failed, abort %s\n",
+    syslog(LOG_ERR, "Resource limitation failed, abort %s\n",
             strerror(errno));
     exit(1);
 }
@@ -602,7 +605,7 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 	}
 
     if (!rfile){
-        fprintf(stderr, "Error: no nfcapd file was specified\n");
+        syslog(LOG_ERR, "Error: no nfcapd file was specified");
         usage(argv[0]);
         exit(1);
     }
@@ -626,5 +629,8 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 
     /* Tell the daemon that the job is done */
     remove_pid();
+
+    /* Cleanup of syslog channel */
+    closelog();
 	return 0;
 }
