@@ -301,7 +301,7 @@ void connect_to_redisServer(void)
    g_rctx = redisConnectWithTimeout(redis_server_address, redis_server_port, timeout);
 
     if (g_rctx->err) {
-        printf("Connection error: %s\n", g_rctx->errstr);
+        fprintf(stderr, "Connection error: %s\n", g_rctx->errstr);
         exit(1);
     }
 }
@@ -358,7 +358,7 @@ void set_file_indexes(void)
     return;
 
 error:
-    printf("Connection error: %s\n", g_rctx->errstr);
+    fprintf(stderr,"Connection error: %s\n", g_rctx->errstr);
     exit(1);
 }
 
@@ -452,7 +452,6 @@ inline int checkqueue(unsigned long long l1, unsigned long long l2)
 void store_address(char* addr)
 {
     reply = redisCommand(g_rctx,"SADD n%s %d", addr, g_index);
-   // printf("ADDR:%s\n",addr);
     if (reply){
           freeReplyObject(reply);
     }else{
