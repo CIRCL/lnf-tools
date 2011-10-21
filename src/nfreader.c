@@ -128,6 +128,7 @@ char* redis_server_address = "127.0.0.1";
 int redis_server_port = 6379;
 int cacheenable = 1;
 int error_counter = 0;
+int database=0;
 
 /* Functions */
 
@@ -140,6 +141,10 @@ static void usage(char *name) {
         printf("\t[-s]\t\tspecify the redis server name or IP address\n");
         printf("\t[-p]\t\tspecify the redis server port\n");
         printf("\t[-c]\t\tDisable local cache. The local cache needs 500MB of memory.\n");
+        printf("\t[-d <db>]       Specify the database number where the keys are stored \n");
+        printf("\t                A dedicated database has the advantage to use the command\n");
+        printf("\t                FLUSHDB which is faster than removing individual keys\n");
+        printf("\t                The default database number is 0\n");
         printf("\nDESCRIPTION\n\n");
         printf("In redis keys are created such as n4:10.0.0.1. Each key has a set as value.\n");
         printf("An IP address always starts with n followed by 4 (IPv4) or by 6 (IPv6). This\n");
@@ -344,8 +349,14 @@ void transmit_pid(void)
 /* Remove the key nfpid such that the daemon knows that the job is done */
 void remove_pid(void)
 {
+    /* Go to default database */
+    reply = redisCommand(g_rctx, "SELECT 0");
+    if (!reply)
+        goto error;
+    freeReplyObject(reply);
     reply = redisCommand(g_rctx,"DEL nfpid");
     if (!reply){
+        error:
         syslog(LOG_ERR, "Could not tell the daemon my PID, abort ...\n");
         exit(1);
     }
@@ -356,7 +367,6 @@ void remove_pid(void)
 void set_file_indexes(void)
 {
     int idx;
-
     idx=check_filename_in_redis(g_filename);
     if (idx > 0)
         return;
@@ -375,6 +385,13 @@ void set_file_indexes(void)
 
     /* Put the reverse index */
     reply = redisCommand(g_rctx, "SET d:%d %s", g_index,g_filename);
+    if (!reply)
+        goto error;
+    freeReplyObject(reply);
+
+
+    /* Select the other database for storing the keys */
+    reply = redisCommand(g_rctx, "SELECT %d",database);
     if (!reply)
         goto error;
     freeReplyObject(reply);
@@ -580,7 +597,7 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 
 
 	rfile =  NULL;
-	while ((c = getopt(argc, argv, "p:hr:s:c")) != EOF) {
+	while ((c = getopt(argc, argv, "p:hr:s:cd:")) != EOF) {
 		switch (c) {
 			case 'h':
 				usage(argv[0]);
@@ -597,6 +614,9 @@ if (setrlimit(RLIMIT_AS, &rlim) < 0){
 			    break;
             case 'c':
                 cacheenable=0;
+                break;
+            case 'd':
+                database = atoi(optarg);
                 break;
             default:
 				usage(argv[0]);
