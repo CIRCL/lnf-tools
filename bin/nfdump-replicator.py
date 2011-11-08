@@ -79,16 +79,20 @@ GPLv3
 configfile="/etc/nfdump-replicator"
 
 def getfilename(filename, flowdirs,re):
+    filename=filename.replace('./','')
     for d in flowdirs:
         f  = d  + '/' + filename
-        if (os.path.exists(f) == True):
+        print "[DBG] Probing ",f
+        if os.path.exists(f) == True:
+            print "[DBG] Found it in ",d
             return f
-        #Serious error, filename not found, abort
-        syslog.syslog('Could not find file (' + filename + ')')
-        print '[ERROR] Could not find file (' + filename + ')'
-        print "[ERROR] Pushback into queue", filename
-        re.lpush("toprocess",filename)
-        sys.exit(1)
+    #Serious error, filename not found, abort
+    syslog.syslog('Could not find file (' + filename + ')')
+    print '[ERROR] Could not find file (' + filename + ')'
+    print '[ERROR] Looked up in '+str(flowdirs) + '\n'
+    print "[ERROR] Pushback into queue", filename
+    re.lpush("toprocess",filename)
+    sys.exit(1)
 
 
 def transfer_file(a, re):
