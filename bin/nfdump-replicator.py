@@ -157,9 +157,8 @@ try:
     pollinterval   = config.getint("redis","pollinterval")
     flowdirs       = read_flow_dirs(config)
     connecttimeout = config.get('target', 'connecttimeout')
-    #FIXME Does not work on other ports
-    #Connect to redis
 
+    #Connect to redis
     r = redis.Redis(redis_address, redis_port)
     while True:
         #Poll queue
