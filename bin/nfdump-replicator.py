@@ -187,4 +187,7 @@ except IOError,w:
 except redis.exceptions.ConnectionError,e:
     sys.stderr.write("Could not access redis server " + str(e) + "\n")
     sys.exit(1)
+except KeyboardInterrupt,e:
+    sys.stderr.write('User stopped the process\n')
+    sys.exit(1)
 sys.exit(0)
