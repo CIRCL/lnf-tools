@@ -67,11 +67,12 @@ class KindCommon(object):
             self.error = str(w)
 
     def dbg(self, msg):
-        sys.stdout.write(msg + '\n')
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        sys.stdout.write("["+ts+"] "+msg + '\n')
         sys.stdout.flush()
 
     #Returns the directories containing the files created by nfcapd or that
-    #were transferred via otehr channels
+    #were transferred via other channels
     def read_flow_dirs(self):
         flowdirs=[]
         i=0
@@ -102,7 +103,6 @@ class KindCommon(object):
         return k
 
     def check_filename(self,filename):
-        print "filename", filename
         if (len(filename) != 12):
             self.dbg('Invalid file name length for '+ filename)
             return None
