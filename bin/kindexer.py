@@ -118,15 +118,25 @@ class Kindexer(object):
 
     def copy_database(self, nffile):
         target_db = self.kco.get_databasefile(nffile)
+        target_tempdb = self.kco.get_temp_databasefile(nffile)
         tf=self.config.get("indexer","tmpdir") + os.sep + 'current.kch'
-        cmd="mv " + tf  + " "+ target_db
+        cmd="mv " + tf  + " "+ target_tempdb
         #Check if there is already a database
         if (os.path.exists(target_db)):
             sys.stderr.write("Target dabase already exists, abort "+target_db \
             + "\n")
             sys.exit(1)
+        #This command takes time and the transfer should not be visible to
+        #other processes. Therefore, the file is copied in a hidden file.
+        #When the transfer is done the file is removed which is assumed to be
+        #atomic
         self.cexec(cmd)
-
+        self.kco.dbg('Renaming '+ target_tempdb + ' -> ' + target_db )
+        try:
+            os.rename(target_tempdb, target_db)
+        except OSError,e:
+            self.kco.dbg("Could not rename file "+ str(e))
+            sys,exit(1)
     def check_current_database(self):
         p = self.config.get('indexer','tmpdir') + os.sep + 'current.kch'
         if os.path.exists(p):

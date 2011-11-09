@@ -141,6 +141,37 @@ class KindCommon(object):
             os.mkdir(p)
         return dbfile
 
+    #This routine returns almost the same path except that the filename is
+    #a hidden file. If concurrent daemons serach the databases only
+    #complete filenames are present assuming that the move operation within
+    #a disk is attomic
+    def get_temp_databasefile(self,filename):
+        if filename == None:
+            return None
+        f = os.path.basename(filename)
+        f = f.replace('nfcapd.','')
+        if self.check_filename(f) == None:
+            return None
+
+        year = f[0:4]
+        month = f[4:6]
+        day = f[6:8]
+        hour = f[8:10]
+        mn = f[10:12]
+        dbfile=self.config.get('indexer','dbdir') + os.sep + year + \
+                          os.sep + month + os.sep+"."+day+".kch"
+
+        #Check if the directory structure exists
+        #If it does not exist create it, the db files are not created because
+        #kyoto cabinet does not like empty files
+        p = self.config.get('indexer','dbdir')+os.sep + year
+        if (os.path.exists(p) == False):
+            os.mkdir(p)
+        p = self.config.get('indexer','dbdir') + os.sep + year + os.sep + month
+        if (os.path.exists(p) == False):
+            os.mkdir(p)
+        return dbfile
+
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
         filename="../t/kindexer/kindexer.cfg"
