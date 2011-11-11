@@ -25,7 +25,7 @@ import os
 import redis
 import time
 import kindcommon
-
+import getopt
 
 class Kindexer(object):
 
@@ -36,6 +36,8 @@ class Kindexer(object):
         self.rd= redis.Redis(host, port)
         self.rd.select(self.config.get('redis','dbnum'))
         self.kco = kindcommon.KindCommon(self.config)
+        #Default prefix is dq meaning that all the queues should be processed
+        self.prefix = 'dq:'
 
     def load_config(self,configfile):
         try:
@@ -169,7 +171,9 @@ class Kindexer(object):
 
     def process(self):
         self.check_current_database()
-        for qname in self.rd.keys("dq:*"):
+        k = self.prefix+"*"
+        self.kco.dbg('Using queue prefix ' + str(k) + '\n')
+        for qname in self.rd.keys(k):
             self.kco.dbg("Processing queue "+qname)
             lastfile = self.process_queue( qname)
             #The entire queue corresponding to a day of netflow has been indexed
@@ -179,12 +183,77 @@ class Kindexer(object):
             self.kco.dbg("Removing queue " + qname)
             self.rd.delete(qname)
 
+
+def usage(exitcode):
+    print """
+Bot/Daemon for launching knfreader on a collection of nfcapd files.
+
+kindexer.py [-h] [-p prefix] [-s] -c config_file
+
+OPTIONS
+    -h Shows this screeen
+    -c Specify the kindexer configuration file
+    -s Synchronize netflow directories and redis only and exit
+    -p <prefix> Process all the queues starting with prefix
+       Usefull if multiple instance of kindexer run in parallel. Each instance,
+       has its own prefix and configuration file
+
+
+DEFAULT BEHAVIOR
+
+    All the files are synchronized and a single do the processing
+
+AUTHOR
+
+Gerard Wagener
+
+LICENSE
+
+GPLv3
+
+"""
+    sys.exit(exitcode)
+
+
 if __name__ == '__main__':
     try:
-        ki = Kindexer('kindexer.cfg')
+        configfile = None
+        prefix=None
+        shouldSync = False
+
+        opts,args = getopt.getopt(sys.argv[1:], 'hc:p:s')
+        for o,a in opts:
+            if o == '-h':
+                usage(0)
+            elif o == '-c':
+                configfile = a
+            elif o == '-p':
+                prefix = a
+            elif o == '-s':
+                shouldSync = True
+
+        if (configfile == None):
+            sys.stderr.write('A config file must be specified\n')
+            usage(1)
+        print "configfile", configfile
+
+        ki = Kindexer(configfile)
+        if shouldSync:
+            ki.kco.dbg('Synchronize only')
+            ki.sync_filenames()
+            sys.exit(0)
+        if prefix != None:
+            ki.kco.dbg('Do processing only for the prefix  ' + prefix + '\n')
+            ki.prefix = prefix
+            ki.process()
+            ki.kco.dbg('*** Partial indexing for prefix '+prefix + ' is done ***')
+            ki.kco.dbg("Kindexer bot successfully stopped")
+            sys.exit(0)
+        ki.kco.dbg('Using default behavior syncronizing and indexing single process\n')
         ki.sync_filenames()
         ki.process()
-        ki.kco.dbg("Kindexer bot stopped")
+        ki.kco.dbg('*** Full indexing is done ***')
+        ki.kco.dbg("Kindexer bot successfully stopped")
         sys.exit(0)
     except redis.exceptions.ConnectionError,c:
         sys.stderr.write(str(c)+'\n')
