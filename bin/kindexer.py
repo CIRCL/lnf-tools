@@ -31,7 +31,10 @@ class Kindexer(object):
 
     def __init__(self, configfile):
         self.load_config (configfile)
-        self.rd = redis.Redis()
+        host = self.config.get('redis','host')
+        port = int(self.config.get('redis','port'))
+        self.rd= redis.Redis(host, port)
+        self.rd.select(self.config.get('redis','dbnum'))
         self.kco = kindcommon.KindCommon(self.config)
 
     def load_config(self,configfile):
@@ -50,9 +53,10 @@ class Kindexer(object):
                 raise IOError("Program does not exists "+p)
             if (os.access(p, os.X_OK) == False):
                 raise IOError("Program is not executable")
-            self.config.get("indexer","name")
             self.config.get("indexer", "prg")
-
+            int(self.config.get("redis","dbnum"))
+            self.config.get("redis","host")
+            int(self.config.get("redis","port"))
         except ConfigParser.NoOptionError,e:
             sys.stderr.write("Config Error: "+str(e) + '\n')
             sys.exit(1)
