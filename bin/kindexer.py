@@ -81,6 +81,9 @@ class Kindexer(object):
         for dir in dirs:
             self.kco.dbg("Going through directory "+ dir)
             for fl in os.listdir(dir):
+                if fl.startswith('.'):
+                    self.kco.dbg("A hidden file was found skiping it "+fl)
+                    continue
                 #Check if netflow file has already be indexed
                 fdb = self.kco.get_databasefile(fl)
                 if os.path.exists(fdb):
@@ -91,7 +94,7 @@ class Kindexer(object):
                     #The file was not seen before
                     self.rd.set(k,"QUEUED") # Majorly informative
                     qname=self.kco.get_queue_name(fl)
-                    self.kco.dbg("Adding " + str(fl) +  "to queue " + qname)
+                    self.kco.dbg("Adding " + str(fl) +  " to queue " + qname)
                     #Create an individual queue for an indexer
                     self.rd.rpush(qname, dir+os.sep+fl)
 
