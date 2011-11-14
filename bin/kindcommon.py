@@ -172,6 +172,32 @@ class KindCommon(object):
             os.mkdir(p)
         return dbfile
 
+    #Values are stored as a string. This string is a comma separated list
+    #of indices. This list can have empty values, and duplicated values
+    #because during the indexing no checks are done in order to reduce the
+    #number of operations to the kyoto database.
+    #Therefore, this routine undoes these artifacts
+    #
+    #Input a raw value string
+    #Returns a clean list of values
+    def parse_index_value(self, value):
+        if (value == None):
+            return []
+        #Remove heading comma
+        if value.startswith(','):
+            value = value[1:]
+        l = value.split(',')
+        #Copy elements from the list to a dict too remove duplicates
+        buf = dict()
+        for i in l:
+            try:
+                buf[int(i)] = 1
+            except ValueError,e:
+                self.dbg('Could not parse ' + str(e) + ' skip it')
+        k = buf.keys()
+        k.sort()
+        return k
+
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
         filename="../t/kindexer/kindexer.cfg"
@@ -192,5 +218,29 @@ class TestKindCommon(unittest.TestCase):
         "../t/kindexer/databases/2011/11/08.kch")
         self.assertEqual(kco.get_databasefile('aaa'), None)
         self.assertEqual(kco.get_databasefile(None), None)
+
+    def test_parsers(self):
+        filename="../t/kindexer/kindexer.cfg"
+        f = open(filename,'r')
+        config = ConfigParser.ConfigParser()
+        config.readfp(f)
+        f.close()
+        kco = KindCommon(config)
+        t=kco.parse_index_value(',1,2,3')
+        self.assertEqual(t,[1,2,3])
+
+        #Test None objs
+        t = kco.parse_index_value(None)
+        self.assertEqual(t,[])
+
+        t = kco.parse_index_value("1,2")
+        self.assertEqual(t,[1,2])
+
+        t = kco.parse_index_value('1,')
+        self.assertEqual(t,[1])
+
+        t = kco.parse_index_value('1,a,2')
+        self.assertEqual(t,[1,2])
+
 if __name__=='__main__':
     unittest.main()
