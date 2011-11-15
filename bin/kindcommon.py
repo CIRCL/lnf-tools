@@ -198,6 +198,16 @@ class KindCommon(object):
         k.sort()
         return k
 
+    #Builds the key out of an IP address
+    #Takes an IP address as input and builds a string
+    #IPv4 address encoding n4:10.0.0.1
+    #Ipv6 adress encoding n6:dead:beef::1
+    def build_key(self, addr):
+        if addr.find(':') != -1:
+            return "n6:" + addr
+        else:
+            return "n4:" + addr
+
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
         filename="../t/kindexer/kindexer.cfg"
@@ -241,6 +251,12 @@ class TestKindCommon(unittest.TestCase):
 
         t = kco.parse_index_value('1,a,2')
         self.assertEqual(t,[1,2])
+
+        t = kco.build_key("10.0.0.1")
+        self.assertEqual(t,"n4:10.0.0.1")
+
+        t = kco.build_key("dead:beef::23")
+        self.assertEqual(t, "n6:dead:beef::23")
 
 if __name__=='__main__':
     unittest.main()
