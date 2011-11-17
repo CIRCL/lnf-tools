@@ -78,6 +78,10 @@ FORMAT OPTIONS
                          be specified. %f is substituted by the filename
                          identified in the index
 
+    "print full"         Executes nfdump on each nfcapd file. The nfdump program
+                         can be specified in the config file using the prg key.
+                         Generic arguments can be put with the key "args"
+
 The default format is the format "print absolute". Note the format must be enclosed by
 quotation marks.
 
@@ -142,6 +146,32 @@ quotation marks.
                     print ipaddress, fn
 
 
+    def getfull_flows(self):
+        try:
+            prg = self.config.get("nfdump","prg")
+            args = self.config.get("nfdump", "args")
+            dbdir = self.config.get('indexer','dbdir')
+        except ConfigParser.NoSectionError,e:
+            sys.stderr.write(str(e)+ "\n")
+            sys.exit(1)
+        self.open_databases()
+
+        ky = self.kco.build_key(ipaddress)
+        for db in self.dbobjs:
+            y=db.get(ky)
+            if y != None:
+                indexes =  self.kco.parse_index_value(y)
+                for i in indexes:
+                    fn=self.get_filename(db,i)
+                    afn  = self.probe_file(fn)
+                    cmd = prg + " " + args +" -r " + afn  + " \"ip "+ipaddress + "\""
+                    print "#"+ cmd
+                    r = os.system(cmd)
+                    if r != 0:
+                        self.kco.dbg("nfdump failed exitcode = "+  str(r) + "\n")
+                        sys.exit(1)
+
+
     #Returns False if the ipaddress is not found
     #Returns True if the ipaddress is found
     def check_address(self):
@@ -190,6 +220,11 @@ try:
         if format.startswith('print relative'):
             kl.print_rel_filenames();
             sys.exit(0)
+
+        if format.startswith('print full'):
+            kl.getfull_flows()
+            sys.exit(0)
+
     #Here some printing is done
     print "#Database directory ", kl.config.get('indexer', 'dbdir')
     print "#IP address ", ipaddress
