@@ -125,9 +125,10 @@ quotation marks.
 
 
 
-    def print_filenames(self):
+    def get_filenames(self):
         dbdir = self.config.get('indexer','dbdir')
         self.open_databases()
+        files = []
         ky = self.kco.build_key(self.ipaddress)
         for db in self.dbobjs:
             y=db.get(ky)
@@ -136,21 +137,18 @@ quotation marks.
                 for i in indexes:
                     fn=self.get_filename(db,i)
                     afn  = self.probe_file(fn)
-                    print self.ipaddress, afn
+                    files.append(afn)
+        return files
 
+    def print_filenames(self):
+        files = self.get_filenames()
+        for f in files:
+            print self.ipaddress," ",f
 
-    def print_rel_filenames(self):
-        dbdir = self.config.get('indexer','dbdir')
-        self.open_databases()
-        ky = self.kco.build_key(self.ipaddress)
-        for db in self.dbobjs:
-            y=db.get(ky)
-            if y != None:
-                indexes =  self.kco.parse_index_value(y)
-                for i in indexes:
-                    fn=self.get_filename(db,i)
-                    print self.ipaddress, fn
-
+    def print_rel_filenames (self):
+        files = self.get_filenames()
+        for f in files:
+            print self.ipaddress," ",os.path.basename(f)
 
     def getfull_flows(self):
         try:
