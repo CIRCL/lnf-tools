@@ -29,6 +29,7 @@ class Klookup(object):
 
     def __init__(self,configFile=None):
         self.configFile = configFile
+        self.ipaddress = None
 
     def  load(self):
         try:
@@ -63,6 +64,10 @@ OPTIONS
     -i The IP adderss that is queries
     -c Specify the kindexer config file in order to find the absolute filenames
     -f FORMAT OPTION
+    -l Loop. Klookup runs as a blocking process dedicated to run in a GNU screen
+             on the system containing the databases. This process can then be queried
+             via a bot for  instance an XMPP bot. The interaction is done
+             via redis. (see REDIS_STRUCTURE)
 
 The list of nfcapd files is returned corersponing to the queried IP address
 
@@ -84,6 +89,7 @@ FORMAT OPTIONS
 
 The default format is the format "print absolute". Note the format must be enclosed by
 quotation marks.
+
 
 """
         sys.exit(exitcode)
@@ -122,7 +128,7 @@ quotation marks.
     def print_filenames(self):
         dbdir = self.config.get('indexer','dbdir')
         self.open_databases()
-        ky = self.kco.build_key(ipaddress)
+        ky = self.kco.build_key(self.ipaddress)
         for db in self.dbobjs:
             y=db.get(ky)
             if y != None:
@@ -130,20 +136,20 @@ quotation marks.
                 for i in indexes:
                     fn=self.get_filename(db,i)
                     afn  = self.probe_file(fn)
-                    print ipaddress, afn
+                    print self.ipaddress, afn
 
 
     def print_rel_filenames(self):
         dbdir = self.config.get('indexer','dbdir')
         self.open_databases()
-        ky = self.kco.build_key(ipaddress)
+        ky = self.kco.build_key(self.ipaddress)
         for db in self.dbobjs:
             y=db.get(ky)
             if y != None:
                 indexes =  self.kco.parse_index_value(y)
                 for i in indexes:
                     fn=self.get_filename(db,i)
-                    print ipaddress, fn
+                    print self.ipaddress, fn
 
 
     def getfull_flows(self):
@@ -156,7 +162,7 @@ quotation marks.
             sys.exit(1)
         self.open_databases()
 
-        ky = self.kco.build_key(ipaddress)
+        ky = self.kco.build_key(self.ipaddress)
         for db in self.dbobjs:
             y=db.get(ky)
             if y != None:
@@ -164,7 +170,7 @@ quotation marks.
                 for i in indexes:
                     fn=self.get_filename(db,i)
                     afn  = self.probe_file(fn)
-                    cmd = prg + " " + args +" -r " + afn  + " \"ip "+ipaddress + "\""
+                    cmd = prg + " " + args +" -r " + afn  + " \"ip "+self.ipaddress + "\""
                     print "#"+ cmd
                     r = os.system(cmd)
                     if r != 0:
@@ -177,7 +183,7 @@ quotation marks.
     def check_address(self):
         dbdir = self.config.get('indexer', 'dbdir')
         self.open_databases()
-        ky = self.kco.build_key(ipaddress)
+        ky = self.kco.build_key(self.ipaddress)
         for db in self.dbobjs:
             y = db.get(ky)
             if y == None:
@@ -185,58 +191,62 @@ quotation marks.
             else:
                 return True
 
+def main_function():
+    #### main function
 
-#### main function
+    ipaddress=None
+    format=None
+    kl = Klookup()
 
-ipaddress=None
-format=None
-kl = Klookup()
+    try:
+        #Parse command line arguments
+        opts, args = getopt.getopt(sys.argv[1:],'hf:i:c:')
+        for o,a in opts:
+            if o == '-h':
+                kl.usage(0)
+            elif o == '-i':
+                ipaddress = a
+            elif o == '-c':
+                kl.configFile = a
+            elif o =='-f':
+                format = a
+        if ipaddress == None:
+            sys.stderr.write('An IP address or a list of IP addresses must be specified\n')
+            sys.exit(1)
 
-try:
-    #Parse command line arguments
-    opts, args = getopt.getopt(sys.argv[1:],'hf:i:c:')
-    for o,a in opts:
-        if o == '-h':
-            kl.usage(0)
-        elif o == '-i':
-            ipaddress = a
-        elif o == '-c':
-            kl.configFile = a
-        elif o =='-f':
-            format = a
-    if ipaddress == None:
-        sys.stderr.write('An IP address or a list of IP addresses must be specified\n')
-        sys.exit(1)
+        kl.load()
+        kl.ipaddress = ipaddress
 
-    kl.load()
+        if (format != None):
+            if format.startswith('check'):
+                if kl.check_address():
+                    sys.exit(0)
+                else:
+                    sys.exit(1)
 
-    if (format != None):
-        if format.startswith('check'):
-            if kl.check_address():
+            if format.startswith('print relative'):
+                kl.print_rel_filenames();
                 sys.exit(0)
-            else:
-                sys.exit(1)
 
-        if format.startswith('print relative'):
-            kl.print_rel_filenames();
-            sys.exit(0)
+            if format.startswith('print full'):
+                kl.getfull_flows()
+                sys.exit(0)
 
-        if format.startswith('print full'):
-            kl.getfull_flows()
-            sys.exit(0)
+        #Here some printing is done
+        print "#Database directory ", kl.config.get('indexer', 'dbdir')
+        print "#IP address ", ipaddress
+        print "#Configfile", kl.configFile
 
-    #Here some printing is done
-    print "#Database directory ", kl.config.get('indexer', 'dbdir')
-    print "#IP address ", ipaddress
-    print "#Configfile", kl.configFile
+        #default format
+        startdate=time.time()
+        kl.print_filenames()
+    except getopt.GetoptError,e:
+        sys.stderr.write(str(e)+ '\n')
+        sys.exit(1)
+    endtime=time.time()
+    d = endtime-startdate
+    print "#Processing time: ",d
+    sys.exit(0)
 
-    #default format
-    startdate=time.time()
-    kl.print_filenames()
-except getopt.GetoptError,e:
-    sys.stderr.write(str(e)+ '\n')
-    sys.exit(1)
-endtime=time.time()
-d = endtime-startdate
-print "#Processing time: ",d
-sys.exit(0)
+if __name__ == '__main__':
+    main_function()
