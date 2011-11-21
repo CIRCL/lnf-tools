@@ -235,11 +235,58 @@ class KindCommon(object):
         #alphabet of the filter should be ok
         return True
 
+
+    def check_ip_v4_address(self, str):
+        try:
+            if str == None:
+                return False
+            if str.find('.') == -1:
+                self.dbg('No dot was found in the str do not go further')
+                return False
+            a = str.split('.')
+            #Check if all the elements are numbers
+            for x in a:
+                y = int(x)
+            return True
+        except ValueError,v:
+            self.dbg("check_ip_v4_address ValueError")
+            return False
+        #This code should not be executed
+        return False
+
+    def check_ipv_6_address(self, st):
+        try:
+            if st == None:
+                return False
+            if st.find(':') == -1:
+                self.dbg("No : was found ")
+                return False
+            #Ignore address compression
+            st = st.replace('::',':')
+            a = st.split(':')
+            for x in a:
+                y = "0x" +x
+                int(y,0)
+            return True
+        except ValueError,v:
+            self.dbg('Value Error ' + str(v))
+            return False
+        #This return should not be executed
+        return False
+
     #Use a pcap filter as input and return an array of IP addresses
     #Returns an empty array when there is a parsing error
     def get_ipaddress_from_filter(self,pcapfilter):
-       #TODO implement me
-       return pcapfilter
+        addresses = []
+        wordlist = pcapfilter.split(' ')
+        for word in wordlist:
+            if self.check_ip_v4_address(word) == True:
+                addresses.append(word)
+
+            if self.check_ipv_6_address(word) == True:
+                addresses.append(word)
+        return addresses
+
 
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
@@ -295,5 +342,22 @@ class TestKindCommon(unittest.TestCase):
 
         self.assertEqual(kco.check_pcap_alph(None), False)
         self.assertEqual(kco.check_pcap_alph('10.$.1.1'),False)
+        self.assertEqual(kco.check_ip_v4_address("10.0.0.1"), True)
+        self.assertEqual(kco.check_ip_v4_address("10.0.0.a"), False)
+        self.assertEqual(kco.check_ip_v4_address(None), False)
+
+        self.assertEqual(kco.check_ipv_6_address("abc2:14AE:5::123:42cf"), True)
+        self.assertEqual(kco.check_ipv_6_address("ayc2:14ae:5::123:42cf"), False)
+        self.assertEqual(kco.check_ipv_6_address(None), False)
+
+
+        t =  ['10.0.0.1']
+        x = kco.get_ipaddress_from_filter("10.0.0.1 and port 22")
+        self.assertEqual(t,x)
+
+        self.assertEqual(kco.get_ipaddress_from_filter("port 22"),[])
+        self.assertEqual(kco.get_ipaddress_from_filter("10.0.0.1 or 192.168.1.1"),['10.0.0.1','192.168.1.1'])
+        self.assertEqual(kco.get_ipaddress_from_filter("122:123:abc::1"),['122:123:abc::1'])
+
 if __name__=='__main__':
     unittest.main()
