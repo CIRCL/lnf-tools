@@ -26,6 +26,7 @@ import os
 import redis
 import time
 import unittest
+import string
 
 class KindCommon(object):
 
@@ -208,6 +209,38 @@ class KindCommon(object):
         else:
             return "n4:" + addr
 
+
+    def check_pcap_alph(self, pcapfilter):
+        if pcapfilter == None:
+            return False
+        alph = []
+        #Uppercase characters are valid
+        for c in string.uppercase:
+            alph.append(c)
+        #Lowercase characters are valid
+        for c in string.lowercase:
+            alph.append(c)
+        for c in string.digits:
+            alph.append(c)
+        #Some special characters are valid
+        alph.append('.')
+        alph.append(':')
+        alph.append(' ')
+
+        for ch in pcapfilter:
+            if  not ch in alph:
+                self.dbg('Invalid character '+hex(ord(ch)) + ' in pcap filter ('+pcapfilter + ')')
+                return False
+        #If there is something wrong the function should have returned so the
+        #alphabet of the filter should be ok
+        return True
+
+    #Use a pcap filter as input and return an array of IP addresses
+    #Returns an empty array when there is a parsing error
+    def get_ipaddress_from_filter(self,pcapfilter):
+       #TODO implement me
+       return pcapfilter
+
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
         filename="../t/kindexer/kindexer.cfg"
@@ -258,5 +291,9 @@ class TestKindCommon(unittest.TestCase):
         t = kco.build_key("dead:beef::23")
         self.assertEqual(t, "n6:dead:beef::23")
 
+        self.assertEqual(kco.check_pcap_alph("10.0.0.1 and port 22"), True)
+
+        self.assertEqual(kco.check_pcap_alph(None), False)
+        self.assertEqual(kco.check_pcap_alph('10.$.1.1'),False)
 if __name__=='__main__':
     unittest.main()
