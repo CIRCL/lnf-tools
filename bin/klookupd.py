@@ -146,6 +146,17 @@ class KlookupIPC(object):
         a = 'bs:'+uuid
         return self.rd.get(a)
 
+
+    def list_jobs(self):
+        jobs = dict()
+        #keys does return an empty array in case there are no keys
+        for i in self.rd.keys('bs:*'):
+            state = self.rd.get(i)
+            i = i.replace('bs:', '')
+            jobs[i] = state
+        return jobs
+
+
     #Set a job to query data
     #TODO implement start date
     #date format YYYY-mm-dd
