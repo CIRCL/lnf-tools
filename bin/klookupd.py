@@ -144,6 +144,7 @@ class KlookupIPC(object):
     #TODO implement start date
     #date format YYYY-mm-dd
     def query(self, pcapfilter, style, startDate=None):
+        uuid = None
         if self.check_style(style) == False:
             raise KlookupException("Wrong format for the data style")
 
@@ -151,12 +152,16 @@ class KlookupIPC(object):
             raise KlookupException("Invlid filter")
         ipaddresses = self.kco.get_ipaddress_from_filter(pcapfilter)
         x = self.rd.lpop("tickets")
+        if x ==None:
+            self.kco.dbg('No free ticket is available')
+            return None
         self.kco.dbg("Got ticket uuid: "+x)
         #Create a request for the daemon
         a = '['+ ','.join(ipaddresses) + ']'
         self.rd.rpush("btoprocess","br:" +x+ "+"+ a + "+"+ style)
         #Update status to PENDING
         self.update_status(x,KlookupIPC.PENDING)
+        return x
 
     def parse_job(self, jobstr):
         try:
