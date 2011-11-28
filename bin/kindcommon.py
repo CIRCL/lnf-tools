@@ -287,6 +287,12 @@ class KindCommon(object):
                 addresses.append(word)
         return addresses
 
+    def isValidFilter(self,pcapfilter):
+        address  = self.get_ipaddress_from_filter(pcapfilter)
+        if len(address) > 0:
+            return True
+        #Default failure
+        return False
 
 class TestKindCommon(unittest.TestCase):
     def test_all(self):
