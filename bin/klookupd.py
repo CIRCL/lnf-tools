@@ -116,6 +116,11 @@ class KlookupIPC(object):
 
         self.linecounter = 0
 
+    def create_ticket(self):
+        u = uuid.uuid4()
+        self.kco.dbg("Created ticket "+str(u))
+        self.rd.rpush("tickets",str(u))
+
     def update_availability_slots(self):
         #Get the number of available slots
         u = self.rd.llen("tickets")
@@ -124,9 +129,8 @@ class KlookupIPC(object):
         self.kco.dbg("Going to add " + str(r) + " tickets")
         #Fill the remaining slots
         for i in xrange(0,r):
-            u = uuid.uuid4()
-            self.kco.dbg("Created ticket "+str(u))
-            self.rd.rpush("tickets",str(u))
+            self.create_ticket()
+        #FIXME check for resident old jobs that filled the memory
 
     def check_style(self, style):
         #Valid style list
@@ -403,6 +407,8 @@ class KlookupIPC(object):
                 k = "bs:"+uuid
                 if self.rd.delete("bs:"+uuid)==True:  #tested
                     self.kco.dbg("Deleted entry "+ k)
+                #Create new tickets  such that we do not run out of tickets
+                self.create_ticket()
                 #TODO remove the corresponding ticket in the non existant ticket set
                 #to validate the correct tickets
             else:
