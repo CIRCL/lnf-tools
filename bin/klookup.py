@@ -111,6 +111,7 @@ quotation marks.
                 print >>sys.stderr, "open error: " + str(db.error())
                 sys.exit(1)
             self.dbobjs.append(db)
+        return self.dbobjs
 
     def probe_file(self,fn):
         for f in self.flowdirs:
