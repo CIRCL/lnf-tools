@@ -360,9 +360,12 @@ class KlookupIPC(object):
 
     def get_query_result(self, uuid):
         line="a"
+        buf=[]
         while line != None:
-            line = rd.lpop('bc:'+uuid)
-            print line
+            line = self.rd.lpop('bc:'+uuid)
+            if line != None:
+                buf.append(line)
+        return buf
 
         #The daemon checks  for empty bc keys llen = 0. If such a queue is
         #observed it knows that the queue is empty
