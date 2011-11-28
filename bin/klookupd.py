@@ -138,7 +138,13 @@ class KlookupIPC(object):
 
 
     def update_status(self, uuid, status):
+        if uuid == None:
+            return None
         self.rd.set("bs:" + uuid, status)
+
+    def get_status(self,uuid):
+        a = 'bs:'+uuid
+        return self.rd.get(a)
 
     #Set a job to query data
     #TODO implement start date
