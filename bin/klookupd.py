@@ -121,16 +121,24 @@ class KlookupIPC(object):
         self.kco.dbg("Created ticket "+str(u))
         self.rd.rpush("tickets",str(u))
 
+    def get_job_num(self):
+        k = len(self.rd.keys('bs:*'))
+        self.kco.dbg('Currently there are '+ str(k) + ' jobs')
+        return k
+
     def update_availability_slots(self):
         #Get the number of available slots
         u = self.rd.llen("tickets")
         self.kco.dbg("Number of available tickets "+str(u))
-        r =  self.maxSlots - u
+        k = self.get_job_num()
+        r =  self.maxSlots - u - k
+        if r<=0:
+            self.kco.dbg('No jobs such be created k='+str(k))
+            return
         self.kco.dbg("Going to add " + str(r) + " tickets")
         #Fill the remaining slots
         for i in xrange(0,r):
             self.create_ticket()
-        #FIXME check for resident old jobs that filled the memory
 
     def check_style(self, style):
         #Valid style list
