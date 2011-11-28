@@ -384,6 +384,8 @@ class KlookupIPC(object):
     def get_query_result(self, uuid):
         line="a"
         buf=[]
+        #TODO raise an exception if the results are queried for a pending or
+        #running, started  job
         while line != None:
             line = self.rd.lpop('bc:'+uuid)
             if line != None:
