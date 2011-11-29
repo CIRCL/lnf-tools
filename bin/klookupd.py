@@ -508,3 +508,13 @@ LICENSE
     except getopt.GetoptError, err:
         sys.stderr.write(str(err)+"\n")
         sys.exit(1)
+    except ConfigParser.NoOptionError,e:
+        sys.stderr.write('Invalid configuration file '+ str(e) +'\n')
+        sys.exit(1)
+    except ConfigParser.MissingSectionHeaderError,e:
+        sys.stderr.write('Invalid configuration file '+ str(e) +'\n')
+        sys.exit(1)
+    except ConfigParser.NoSectionError,e:
+        sys.stderr.write('Invalid configuration file '+ str(e) +'\n')
+        sys.exit(1)
+
