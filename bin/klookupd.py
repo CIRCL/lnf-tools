@@ -420,10 +420,15 @@ class KlookupIPC(object):
                 #Remove the status. Even when there is a buggy entry i.e. bs:foobar then this
                 #entry is removed
                 k = "bs:"+uuid
-                if self.rd.delete("bs:"+uuid)==True:  #tested
-                    self.kco.dbg("Deleted entry "+ k)
-                #Create new tickets  such that we do not run out of tickets
-                self.create_ticket()
+                status = self.rd.get(k)
+                self.kco.dbg('The corresponding status is ' + status)
+                if status == KlookupIPC.TRUNCATED or status == KlookupIPC.COMPLETED:
+                    if self.rd.delete("bs:"+uuid)==True:  #tested
+                        self.kco.dbg("Deleted entry "+ k)
+                    #Create new tickets  such that we do not run out of tickets
+                    self.create_ticket()
+                else:
+                    self.kco.dbg('Do not remove the entry it might be usefull')
                 #TODO remove the corresponding ticket in the non existant ticket set
                 #to validate the correct tickets
             else:
