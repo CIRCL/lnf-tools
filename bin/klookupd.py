@@ -61,7 +61,6 @@
 #TODO test timeout of nfdump -> endless loop
 #TODO set expire on keys
 #TODO check validity of tickets
-#TODO test bogus nfdump filters
 import redis
 import kindcommon
 import ConfigParser
