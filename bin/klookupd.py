@@ -448,8 +448,6 @@ class KlookupIPC(object):
                     self.create_ticket()
                 else:
                     self.kco.dbg('Do not remove the entry it might be usefull')
-                #TODO remove the corresponding ticket in the non existant ticket set
-                #to validate the correct tickets
 
 class TestDaemon(unittest.TestCase):
     def testParsers(self):
