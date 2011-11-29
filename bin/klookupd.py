@@ -406,15 +406,23 @@ class KlookupIPC(object):
     def get_query_result(self, uuid):
         if self.check_ticket(uuid) == False:
             raise KlookupException('Invalid ticket '+ uuid)
-        line="a"
-        buf=[]
-        #TODO raise an exception if the results are queried for a pending or
-        #running, started  job
-        while line != None:
-            line = self.rd.lpop('bc:'+uuid)
-            if line != None:
-                buf.append(line)
-        return buf
+        k = 'bs:'+uuid
+        status = self.rd.get(k)
+        self.kco.dbg('Status of the job result request '+str(status))
+        if status == None:
+            raise KlookupException('No available results for job '+uuid)
+
+        if status == KlookupIPC.COMPLETED or status == KlookupIPC.TRUNCATED:
+            line="a"
+            buf=[]
+            while line != None:
+                line = self.rd.lpop('bc:'+uuid)
+                if line != None:
+                    buf.append(line)
+            return buf
+
+        #The job is at the wrong stage otherwise it has been returned
+        raise KlookupException('The results cannot be queried due to an invalid state ' + status)
 
         #The daemon checks  for empty bc keys llen = 0. If such a queue is
         #observed it knows that the queue is empty
