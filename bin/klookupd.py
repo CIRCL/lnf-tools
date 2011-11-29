@@ -187,7 +187,7 @@ class KlookupIPC(object):
         self.kco.dbg("Got ticket uuid: "+x)
         #Create a request for the daemon
         a = '['+ ','.join(ipaddresses) + ']'
-        self.rd.rpush("btoprocess","br:" +x+ "+"+ a + "+"+ style)
+        self.rd.rpush("btoprocess","br:" +x+ "+"+ a + "+"+ pcapfilter+ "+"+ style)
         #Update status to PENDING
         self.update_status(x,KlookupIPC.PENDING)
         return x
@@ -223,11 +223,16 @@ class KlookupIPC(object):
             if len(addrv) == 0:
                 self.kco.dbg('No valid IP address found in the filter, raise exception ')
                 raise KlookupException("No address found in filter")
-            if self.check_style(t[2]):
-                style = t[2]
+            #Get pcap filter
+            if self.kco.check_pcap_alph(t[2]) == True:
+                pcap_filter=t[2]
+
+            if self.check_style(t[3]):
+                style = t[3]
+
             else:
-                raise KlookupException("Invalid style " + t[2])
-            return [uuid, addrv, style]
+                raise KlookupException("Invalid style " + t[3])
+            return [uuid, addrv, pcap_filter, style]
         except IndexError,e:
             self.kco.dbg("Index error in parse_job "+str(e))
             raise KlookupException("Buggy job description "+jobstr)
@@ -284,7 +289,7 @@ class KlookupIPC(object):
         self.rd.set('bs:'+uuid, KlookupIPC.RUNNING + ':' + str(progress))
 
 
-    def getfull_flowsDup(self, ipaddress, uuid):
+    def getfull_flowsDup(self, ipaddress, uuid, pcap_filter):
         databases = self.klu.open_databases() #TODO update this function to get a sorted list and according to a timestamp
         ndb = len(databases)
         ky = self.kco.build_key(ipaddress)
@@ -306,7 +311,7 @@ class KlookupIPC(object):
                     self.prgargs =self.prgargs.replace(' ','')
                     cmd.append(self.prgargs)
                     cmd.append("-r"  + afn)
-                    cmd.append("ip "+ipaddress )
+                    cmd.append(pcap_filter)
                     queue = "bc:" + uuid
                     status = self.popen_to_redis(cmd,queue)
                     if status == KlookupIPC.TRUNCATED:
@@ -314,7 +319,7 @@ class KlookupIPC(object):
                         return KlookupIPC.TRUNCATED
         return status
 
-    def dispatch_format(self, files, addr, uuid, style):
+    def dispatch_format(self, files, addr, uuid, pcap_filter, style):
         #Counter is gloabal for this particular instance spawning over all the files
         self.linecounter = 0
         if style.startswith('print_relative'):
@@ -327,9 +332,9 @@ class KlookupIPC(object):
 
         if style.startswith('print_full'):
             self.kco.dbg('Store full netflow records related to the ip address ' + addr)
-            return self.getfull_flowsDup(addr, uuid)
+            return self.getfull_flowsDup(addr, uuid, pcap_filter)
 
-    def do_job(self, uuid,addr,style):
+    def do_job(self, uuid,addr,pcap_filter, style):
         self.update_status(uuid,KlookupIPC.STARTED)
         startdate = time.time()
         self.kco.dbg("Processing Job "+  uuid)
@@ -340,13 +345,14 @@ class KlookupIPC(object):
         d = enddate - startdate
         self.kco.dbg("Processing time " + str(d))
 
-        status = self.dispatch_format(files,addr[0], uuid, style)
+        status = self.dispatch_format(files,addr[0], uuid, pcap_filter, style)
         self.kco.dbg("The job returned status " + status)
         self.update_status(uuid, status)
 
 
     def daemon_run(self):
         self.kco.dbg("Start to process btoprocess queue")
+        uuid = None
         job = None
         try:
             while True:
@@ -354,8 +360,8 @@ class KlookupIPC(object):
                 if job!= None:
                     self.kco.dbg("Got Job "+job)
                     try:
-                        [uuid, [addr], style] = self.parse_job(job)
-                        self.do_job(uuid,[addr], style)
+                        [uuid, [addr], pcap_filter, style] = self.parse_job(job)
+                        self.do_job(uuid,[addr], pcap_filter, style)
                     except KlookupException,ke:
                         self.kco.dbg('Job Error '+str(ke))
                         #There was an invalid format in the database
@@ -429,8 +435,9 @@ class KlookupIPC(object):
 class TestDaemon(unittest.TestCase):
     def testParsers(self):
         ki = KlookupIPC('kindexer.cfg')
-        [uuid,addrlst, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.0.0.1]+print_full")
+        [uuid,addrlst, pcapfilter, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.0.0.1]+ip 10.0.0.1 and port 80+print_full")
         self.assertEqual(uuid,"208a7374-2703-42a1-bfa0-03eb9e340cb9")
+        self.assertEqual(pcapfilter, "ip 10.0.0.1 and port 80")
         self.assertEqual(style,'print_full')
         self.assertEqual(addrlst[0],'10.0.0.1')
 
@@ -438,11 +445,11 @@ class TestDaemon(unittest.TestCase):
         self.assertRaises(KlookupException, ki.parse_job, None)
         self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.a.0.1]+print_full")
 
-        [uuid,addrlst, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+print_full")
+        [uuid,addrlst, pcapfilter, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+print_full")
         self.assertEqual(addrlst[0], 'dead::beef')
-
-        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::bzeef]+print_full")
-        self.assertRaises(KlookupException, ki.parse_job,  "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+foobar")
+        self.assertEqual(pcapfilter, 'ip dead::beef')
+        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::bzeef]+ip dead::bzeef+print_full")
+        self.assertRaises(KlookupException, ki.parse_job,  "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+foobar")
 
 if __name__ == '__main__':
     #unittest.main()
