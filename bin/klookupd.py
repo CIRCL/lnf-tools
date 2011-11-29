@@ -59,7 +59,6 @@
 
 #TODO sort list the most recent first in case of truncated
 #TODO test timeout of nfdump -> endless loop
-#TODO set expire on keys
 #TODO check validity of tickets
 import redis
 import kindcommon
@@ -106,7 +105,7 @@ class KlookupIPC(object):
         self.klu = klookup.Klookup(configFile)
         self.klu.load()
         self.maxlines = int(self.config.get('daemon', 'maxlines'))
-
+        self.expire = int(self.config.get('daemon','expire'))
 
 
         self.prg = self.config.get("nfdump","prg")
@@ -152,6 +151,7 @@ class KlookupIPC(object):
         if uuid == None:
             return None
         self.rd.set("bs:" + uuid, status)
+        self.rd.expire("bs:" + uuid, self.expire)
 
     def get_status(self,uuid):
         a = 'bs:'+uuid
@@ -243,12 +243,13 @@ class KlookupIPC(object):
             i = i + 1
             if i > self.maxlines:
                 self.kco.dbg('Maximal number of lines for the result queue is reached. The result is truncated.')
+                self.rd.expire(qname,self.expire)
                 return KlookupIPC.TRUNCATED
             if flg == True:
                 self.rd.lpush(qname, os.path.basename(file))
             else:
                 self.rd.lpush(qname, file)
-
+        self.rd.expire(qname,self.expire)
         return KlookupIPC.COMPLETED
 
     #Seg fault is tested
@@ -313,6 +314,8 @@ class KlookupIPC(object):
                     cmd.append(pcap_filter)
                     queue = "bc:" + uuid
                     status = self.popen_to_redis(cmd,queue)
+                    #The results expire whatever the user does
+                    self.rd.expire(queue,self.expire)
                     if status == KlookupIPC.TRUNCATED:
                         self.kco.dbg("The result queue in redis is already full do not go through the other databases")
                         return KlookupIPC.TRUNCATED
@@ -422,7 +425,7 @@ class KlookupIPC(object):
                 k = "bs:"+uuid
                 status = self.rd.get(k)
                 self.kco.dbg('The corresponding status is ' + status)
-                if status == KlookupIPC.TRUNCATED or status == KlookupIPC.COMPLETED:
+                if status == None or status == KlookupIPC.TRUNCATED or status == KlookupIPC.COMPLETED:
                     if self.rd.delete("bs:"+uuid)==True:  #tested
                         self.kco.dbg("Deleted entry "+ k)
                     #Create new tickets  such that we do not run out of tickets
@@ -431,10 +434,6 @@ class KlookupIPC(object):
                     self.kco.dbg('Do not remove the entry it might be usefull')
                 #TODO remove the corresponding ticket in the non existant ticket set
                 #to validate the correct tickets
-            else:
-                #self.kco.dbg("The queue " + r + "is not consummed yet")
-                #TODO check timestamp or use expire in redis
-                pass
 
 class TestDaemon(unittest.TestCase):
     def testParsers(self):
