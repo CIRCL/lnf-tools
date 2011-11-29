@@ -101,6 +101,7 @@ class KlookupIPC(object):
         redishost = self.config.get('redis','host')
         redisport = int(self.config.get('redis', 'port'))
         self.rd = redis.Redis(redishost, redisport)
+        self.rd.select(int(self.config.get('daemon','dbnum')))
         self.sleeptime = int(self.config.get('daemon','sleeptime'))
         self.klu = klookup.Klookup(configFile)
         self.klu.load()
