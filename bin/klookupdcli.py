@@ -54,7 +54,8 @@ OPTIONS
     -e Specify end time which is the latest date where the serach such be done
 
 If no start state end end date is specified, the entire databases are searched
-which may take some time
+which may take some time. Invalid timestamps are ignored and no specific
+error is returned.
 
 AUTHOR
     Gerard Wagener
