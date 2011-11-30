@@ -183,7 +183,7 @@ class KlookupIPC(object):
 
 
     #date format YYYY-mm-dd
-    def query(self, pcapfilter, style, startdate=None, enddate=None):
+    def query(self, pcapfilter, style, startdate, enddate):
         uuid = None
         if self.check_style(style) == False:
             raise KlookupException("Wrong format for the data style")
@@ -334,8 +334,8 @@ class KlookupIPC(object):
         self.rd.set('bs:'+uuid, KlookupIPC.RUNNING + ':' + str(progress))
 
 
-    def getfull_flowsDup(self, ipaddress, uuid, pcap_filter):
-        databases = self.klu.open_databases() #TODO update this function to get a sorted list and according to a timestamp
+    def getfull_flowsDup(self, ipaddress, uuid, pcap_filter,startdate, enddate):
+        databases = self.klu.open_databases(startdate, enddate)
         ndb = len(databases)
         ky = self.kco.build_key(ipaddress)
         i = 0.0
@@ -379,7 +379,7 @@ class KlookupIPC(object):
 
         if style.startswith('print_full'):
             self.kco.dbg('Store full netflow records related to the ip address ' + addr)
-            return self.getfull_flowsDup(addr, uuid, pcap_filter)
+            return self.getfull_flowsDup(addr, uuid, pcap_filter, startdate, enddate)
 
     def do_job(self, uuid,addr,pcap_filter, style, startts, endts):
         self.update_status(uuid,KlookupIPC.STARTED)
@@ -389,12 +389,11 @@ class KlookupIPC(object):
         self.klu.ipaddress = addr[0]
         self.kco.dbg('do_job startts '+str(startts))
         self.kco.dbg('do_job endts '+str(endts))
-        files = self.klu.get_filenames() #TODO update this function for the timestamps?
+        files = self.klu.get_filenames(startts, endts) #TODO update this function for the timestamps?
         enddate = time.time()
         d = enddate - startdate
         self.kco.dbg("Processing time " + str(d))
-
-        status = self.dispatch_format(files,addr[0], uuid, pcap_filter, style, startdate, enddate)
+        status = self.dispatch_format(files,addr[0], uuid, pcap_filter, style, startts, endts)
         self.kco.dbg("The job returned status " + status)
         self.update_status(uuid, status)
 
