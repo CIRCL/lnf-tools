@@ -210,6 +210,8 @@ quotation marks.
 
 
 
+    #TODO Individual nfdump files must be sorted aswell
+    #Otherwise the 5 minutes intervals do not match anymore
     def get_filenames(self,startdate, enddate):
         dbdir = self.config.get('indexer','dbdir')
         self.open_databases(startdate, enddate)
