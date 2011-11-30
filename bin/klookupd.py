@@ -182,10 +182,8 @@ class KlookupIPC(object):
         return jobs
 
 
-    #Set a job to query data
-    #TODO implement start date
     #date format YYYY-mm-dd
-    def query(self, pcapfilter, style, startDate=None):
+    def query(self, pcapfilter, style, startdate=None, enddate=None):
         uuid = None
         if self.check_style(style) == False:
             raise KlookupException("Wrong format for the data style")
@@ -200,12 +198,36 @@ class KlookupIPC(object):
         self.kco.dbg("Got ticket uuid: "+x)
         #Create a request for the daemon
         a = '['+ ','.join(ipaddresses) + ']'
-        self.rd.rpush("btoprocess","br:" +x+ "+"+ a + "+"+ pcapfilter+ "+"+ style)
+        k = "br:" +x+ "+"+ a + "+"+ pcapfilter+ "+"+ style + "+" + str(startdate) + "+" +str(enddate)
+        self.rd.rpush("btoprocess",k)
         #Update status to PENDING
         self.update_status(x,KlookupIPC.PENDING)
         return x
 
+    def check_date_str(self,datestr):
+        try:
+            (year, month, day)  = datestr.split('-')
+            int(year)
+            int(month)
+            int(day)
+            if len(year) != 4:
+                return False
+            if len(month) != 2:
+                return False
+            if len(day) != 2:
+                return False
+
+            #If still alive here it should be good
+            return True
+        except ValueError,e:
+            self.kco.dbg('check_date_str value error '+ str(e))
+            return False
+        #This should never be executed
+        return False
+
     def parse_job(self, jobstr):
+        startdate = None
+        enddate  = None
         try:
             if jobstr == None:
                 raise KlookupException("Empty job description")
@@ -242,10 +264,18 @@ class KlookupIPC(object):
 
             if self.check_style(t[3]):
                 style = t[3]
-
             else:
                 raise KlookupException("Invalid style " + t[3])
-            return [uuid, addrv, pcap_filter, style]
+
+            #Get start date
+            if t[4] != 'None':
+                if self.check_date_str(t[4]) == True:
+                    startdate = t[4]
+                    #Get end date
+            if t[5] != 'None':
+                if self.check_date_str(t[5]) == True:
+                    enddate = t[5]
+            return [uuid, addrv, pcap_filter, style, startdate, enddate]
         except IndexError,e:
             self.kco.dbg("Index error in parse_job "+str(e))
             raise KlookupException("Buggy job description "+jobstr)
@@ -335,7 +365,7 @@ class KlookupIPC(object):
                         return KlookupIPC.TRUNCATED
         return status
 
-    def dispatch_format(self, files, addr, uuid, pcap_filter, style):
+    def dispatch_format(self, files, addr, uuid, pcap_filter, style, startdate,enddate):
         #Counter is gloabal for this particular instance spawning over all the files
         self.linecounter = 0
         if style.startswith('print_relative'):
@@ -350,18 +380,20 @@ class KlookupIPC(object):
             self.kco.dbg('Store full netflow records related to the ip address ' + addr)
             return self.getfull_flowsDup(addr, uuid, pcap_filter)
 
-    def do_job(self, uuid,addr,pcap_filter, style):
+    def do_job(self, uuid,addr,pcap_filter, style, startts, endts):
         self.update_status(uuid,KlookupIPC.STARTED)
         startdate = time.time()
         self.kco.dbg("Processing Job "+  uuid)
         #FIXME Take only the first IP address the OR clause of nfdump does not work yet
         self.klu.ipaddress = addr[0]
-        files = self.klu.get_filenames()
+        self.kco.dbg('do_job startts '+str(startts))
+        self.kco.dbg('do_job endts '+str(endts))
+        files = self.klu.get_filenames() #TODO update this function for the timestamps?
         enddate = time.time()
         d = enddate - startdate
         self.kco.dbg("Processing time " + str(d))
 
-        status = self.dispatch_format(files,addr[0], uuid, pcap_filter, style)
+        status = self.dispatch_format(files,addr[0], uuid, pcap_filter, style, startdate, enddate)
         self.kco.dbg("The job returned status " + status)
         self.update_status(uuid, status)
 
@@ -376,8 +408,8 @@ class KlookupIPC(object):
                 if job!= None:
                     self.kco.dbg("Got Job "+job)
                     try:
-                        [uuid, [addr], pcap_filter, style] = self.parse_job(job)
-                        self.do_job(uuid,[addr], pcap_filter, style)
+                        [uuid, [addr], pcap_filter, style, startdate, enddate] = self.parse_job(job)
+                        self.do_job(uuid,[addr], pcap_filter, style, startdate, enddate)
                     except KlookupException,ke:
                         self.kco.dbg('Job Error '+str(ke))
                         #There was an invalid format in the database
@@ -393,7 +425,7 @@ class KlookupIPC(object):
             if job != None:
                 self.kco.dbg("Push back the started job in the processing queue")
                 self.rd.lpush("btoprocess",job)
-                [uuid, [addr], style] = self.parse_job(job)
+                [uuid, [addr], pcapfilter, style, startdate, enddate ] = self.parse_job(job) #TODO test
                 self.update_status(uuid, KlookupIPC.INTERRUPTED_JOB) #tested
                 #TODO Check the state of a running nfdump process
             else:
@@ -460,21 +492,28 @@ class KlookupIPC(object):
 class TestDaemon(unittest.TestCase):
     def testParsers(self):
         ki = KlookupIPC('kindexer.cfg')
-        [uuid,addrlst, pcapfilter, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.0.0.1]+ip 10.0.0.1 and port 80+print_full")
+        [uuid,addrlst, pcapfilter, style, s,e] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.0.0.1]+ip 10.0.0.1 and port 80+print_full+2011-03-11+2011-04-12")
         self.assertEqual(uuid,"208a7374-2703-42a1-bfa0-03eb9e340cb9")
         self.assertEqual(pcapfilter, "ip 10.0.0.1 and port 80")
         self.assertEqual(style,'print_full')
         self.assertEqual(addrlst[0],'10.0.0.1')
+        self.assertEqual(s, '2011-03-11')
 
         self.assertRaises(KlookupException, ki.parse_job, "br::208a7374-2703-42a1-bfa0-03eb9e340cb9")
         self.assertRaises(KlookupException, ki.parse_job, None)
-        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.a.0.1]+print_full")
+        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[10.a.0.1]+print_full+2011-04-12+None+None")
 
-        [uuid,addrlst, pcapfilter, style] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+print_full")
+        [uuid,addrlst, pcapfilter, style,s,e] =  ki.parse_job("br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+print_full+None+None")
         self.assertEqual(addrlst[0], 'dead::beef')
         self.assertEqual(pcapfilter, 'ip dead::beef')
-        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::bzeef]+ip dead::bzeef+print_full")
-        self.assertRaises(KlookupException, ki.parse_job,  "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+foobar")
+        self.assertRaises(KlookupException, ki.parse_job, "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::bzeef]+ip dead::bzeef+print_full+None+None")
+        self.assertRaises(KlookupException, ki.parse_job,  "br:208a7374-2703-42a1-bfa0-03eb9e340cb9+[dead::beef]+ip dead::beef+foobar+None+None")
+
+        self.assertEqual(ki.check_date_str("2011-11-30"), True)
+        self.assertEqual(ki.check_date_str("a-11-30"), False)
+        self.assertEqual(ki.check_date_str("2011-a-30"),False)
+        self.assertEqual(ki.check_date_str("2011-11-x"),False)
+        self.assertEqual(ki.check_date_str("a"), False)
 
 if __name__ == '__main__':
     #unittest.main()

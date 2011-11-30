@@ -18,8 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#TODO implement timestamp logic to reduce the query time
-
 import klookupd
 import getopt
 import sys
@@ -31,6 +29,7 @@ klookup-cli - A client to interact with klookupd
 USAGE
 
     klookupd-cli [-h] [-t] [-s style -f ipaddress in a pcap filter]  [-q] [-r]
+                 [-e]
 
 DESCRIPTION
 
@@ -52,6 +51,10 @@ OPTIONS
        printed on standard output
     -f Specify a pcap filter that can be applied on the nfcapd files
     -l List all the registered jobs with their state
+    -e Specify end time which is the latest date where the serach such be done
+
+If no start state end end date is specified, the entire databases are searched
+which may take some time
 
 AUTHOR
     Gerard Wagener
@@ -71,8 +74,9 @@ try:
     ticket = None
     results = None
     shouldList = False
+    endtime = None
     #Parse command line arguments
-    opts, args = getopt.getopt(sys.argv[1:],'lr:q:s:f:ht:c:')
+    opts, args = getopt.getopt(sys.argv[1:],'lr:q:s:f:ht:c:e:')
     for o,a in opts:
         if o == '-h':
             usage(0)
@@ -83,13 +87,15 @@ try:
         elif o == '-f':
             filtr = a
         elif o == '-t':
-            timestamp = None
+            timestamp = a
         elif o == '-q':
             ticket = a
         elif o == '-r':
             results = a
         elif o == '-l':
             shouldList  = True
+        elif o == '-e':
+            endtime = a
 
     if configFile == None:
         sys.stderr.write('A config must be specified\n')
@@ -130,7 +136,7 @@ try:
 
     #If there is an IP address set I assume that it is for getting a ticket
     if filtr != None:
-        ticket = kl.query(filtr, style, timestamp)
+        ticket = kl.query(filtr, style, timestamp, endtime)
         if ticket != None:
             print "Got a ticket "+ ticket
             sys.exit(0)
