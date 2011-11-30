@@ -204,6 +204,7 @@ class KlookupIPC(object):
         self.update_status(x,KlookupIPC.PENDING)
         return x
 
+    #FIXME Obsolete function. Those from klookup should be used
     def check_date_str(self,datestr):
         try:
             (year, month, day)  = datestr.split('-')
