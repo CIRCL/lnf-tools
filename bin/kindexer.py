@@ -34,7 +34,7 @@ class Kindexer(object):
         host = self.config.get('redis','host')
         port = int(self.config.get('redis','port'))
         self.rd= redis.Redis(host, port)
-        self.rd.select(self.config.get('redis','dbnum'))
+        self.rd.execute_command('select',self.config.get('redis','dbnum'))
         self.kco = kindcommon.KindCommon(self.config)
         #Default prefix is dq meaning that all the queues should be processed
         self.prefix = 'dq:'
