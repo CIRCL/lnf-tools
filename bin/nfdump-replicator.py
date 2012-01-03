@@ -27,6 +27,7 @@ import sys
 import time
 import os
 import syslog
+import subprocess
 
 def usage(exitcode):
     print """nfdump-replicator
@@ -120,6 +121,28 @@ def getfilename(filename, flowdirs,re):
         re.lpush("toprocess",filename)
     sys.exit(1)
 
+
+def get_next_file():
+    cmd = ['ssh',target_address,'redis-cli' ,'lpop','toprocess']
+    process = subprocess.Popen(cmd,shell=False,stdout=subprocess.PIPE,
+                               stderr=None)
+    buf = []
+    for f in process.stdout:
+        buf.append(f)
+    process.wait()
+    f = buf[0]
+    if f == '(nil)\n':
+        dbg('No file name is available' )
+        f=None
+
+    dbg('Subprocess exit code ' + str(process.returncode))
+    if process.returncode != 0:
+        err('Acquisition of next file failed ')
+        #Here it is not sure if the item was poped or not
+        #Normally not, but it depends on redis-cli
+        sys.exit(1)
+    dbg('get next file returned ' +str(f))
+    return f
 
 def transfer_file(a, r):
     try:
