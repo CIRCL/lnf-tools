@@ -97,6 +97,10 @@ configfile="/etc/nfdump-replicator"
 def dbg(msg):
     sys.stderr.write('[DBG] '+ msg + ' \n' )
 
+
+def err(msg):
+    sys.stderr.write('[ERR] ' + msg + '\n' )
+
 def getfilename(filename, flowdirs,re):
     filename=filename.replace('./','')
     for d in flowdirs:
@@ -106,9 +110,9 @@ def getfilename(filename, flowdirs,re):
             return f
     #Serious error, filename not found, abort
     syslog.syslog('Could not find file (' + filename + ')')
-    print '[ERROR] Could not find file (' + filename + ')'
-    print '[ERROR] Looked up in '+str(flowdirs) + '\n'
-    print "[ERROR] Pushback into queue", filename
+    err('Could not find file (' + filename + ')')
+    err('Looked up in '+str(flowdirs))
+    err('Pushback into queue ' +  filename)
     #Check if in PULL or PUSH mode
     if (re == None):
         print "NYI Pushback not implemented in PULL mode"
