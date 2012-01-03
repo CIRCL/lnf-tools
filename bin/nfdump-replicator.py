@@ -94,11 +94,15 @@ GPLv3
 
 configfile="/etc/nfdump-replicator"
 
+def dbg(msg):
+    sys.stderr.write('[DBG] '+ msg + ' \n' )
+
 def getfilename(filename, flowdirs,re):
     filename=filename.replace('./','')
     for d in flowdirs:
         f  = d  + '/' + filename
         if os.path.exists(f) == True:
+            dbg('Found file at ' + f)
             return f
     #Serious error, filename not found, abort
     syslog.syslog('Could not find file (' + filename + ')')
@@ -119,7 +123,7 @@ def transfer_file(a, re):
         cmd="scp -o ConnectTimeout=" + str(connecttimeout) +\
         " -l " + str(bwlimit) +" " + a + " " + target_address +\
          ":"+target_dir
-        print "[DBG] cmd ",cmd;
+        dbg('cmd '+cmd)
         ret = os.system(cmd)
         if (ret != 0):
             raise OSError('Command failed, bad exit code')
@@ -127,7 +131,7 @@ def transfer_file(a, re):
     except OSError,e:
         sys.stderr.write('OS error'+str(e)+'\n')
         f = os.path.basename(a)
-        print "[DBG] Push back into toprocess queue " + f
+        dbg('Push back into toprocess queue ' + f + '\n')
         r.lpush("toprocess",f)
         sys.stderr.write('Stop transfer process\n')
         sys.exit(1)
@@ -198,14 +202,14 @@ try:
         #Poll queue
         filename = r.lpop("toprocess")
         if (filename == None):
-            print "[DBG] No filename is ready go to sleep for "+\
-                  str(pollinterval) +" seconds"
+            dbg("No filename is ready go to sleep for "+\
+                  str(pollinterval) +" seconds")
             time.sleep(pollinterval)
-            print "[DBG] Wake up"
+            dbg("Wake up")
         else:
-            print "[DBG] Got filename: ",filename
+            dbg("Got filename: "+filename)
             a = getfilename(filename, flowdirs,r)
-            print "[DBG] Absolue filename: ",a
+            dbg("Absolue filename: "+a)
             transfer_file(a, r)
 
 except ConfigParser.NoOptionError,e:
