@@ -122,7 +122,7 @@ def getfilename(filename, flowdirs,re):
     sys.exit(1)
 
 
-def transfer_file(a, re):
+def transfer_file(a, r):
     try:
         cmd="scp -o ConnectTimeout=" + str(connecttimeout) +\
         " -l " + str(bwlimit) +" " + a + " " + target_address +\
@@ -159,6 +159,33 @@ def read_flow_dirs(config):
 
     return flowdirs
 
+def push_mode(config):
+    redis_address  = config.get('redis','address')
+    redis_port     = config.getint('redis','port')
+    target_address = config.get('target','address')
+    target_port    = config.get('target','port')
+    bwlimit        = config.getint('target','bwlimit')
+    target_dir     = config.get('target', 'directory')
+    pollinterval   = config.getint("redis","pollinterval")
+    flowdirs       = read_flow_dirs(config)
+    connecttimeout = config.get('target', 'connecttimeout')
+
+    #Connect to redis
+    r = redis.Redis(redis_address, redis_port)
+    while True:
+        #Poll queue
+        filename = r.lpop("toprocess")
+        if (filename == None):
+            dbg("No filename is ready go to sleep for "+\
+                  str(pollinterval) +" seconds")
+            time.sleep(pollinterval)
+            dbg("Wake up")
+        else:
+            dbg("Got filename: "+filename)
+            a = getfilename(filename, flowdirs,r)
+            dbg("Absolue filename: "+a)
+            transfer_file(a, r)
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hc:f:")
 except getopt.GetoptError, err:
@@ -177,11 +204,11 @@ for o, a in opts:
         sys.stderr.write("Invalid command line option\n")
         sys.exit(1)
 
-pollinterval = 10
 #Load config file access all fields to test if they are set
 try:
     config = ConfigParser.ConfigParser()
     config.readfp(open(configfile))
+
     redis_address  = config.get('redis','address')
     redis_port     = config.getint('redis','port')
     target_address = config.get('target','address')
@@ -199,22 +226,7 @@ try:
         sys.stdout.flush()
         sys.exit(0)
 
-
-    #Connect to redis
-    r = redis.Redis(redis_address, redis_port)
-    while True:
-        #Poll queue
-        filename = r.lpop("toprocess")
-        if (filename == None):
-            dbg("No filename is ready go to sleep for "+\
-                  str(pollinterval) +" seconds")
-            time.sleep(pollinterval)
-            dbg("Wake up")
-        else:
-            dbg("Got filename: "+filename)
-            a = getfilename(filename, flowdirs,r)
-            dbg("Absolue filename: "+a)
-            transfer_file(a, r)
+    push_mode(config)
 
 except ConfigParser.NoOptionError,e:
     sys.stderr.write("Config Error: "+str(e) + '\n')
