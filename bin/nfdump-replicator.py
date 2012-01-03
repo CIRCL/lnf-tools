@@ -42,7 +42,23 @@ program stops
 OPTIONS
 
     -h Displays this screen
+
+    PUSH MODE OPTIONS
+
     -c Specify the configuration file. Default filename /etc/nfdump-replicator
+
+    PULL MODE OPTIONS
+
+    -f Query the full path of an nfcapd file. The results is displayed on
+       stdout and 0 is returned as exit code on stdout
+
+    -n Pop the toprocess queue and display the result on stdout
+
+    -p Push back an nfcapd file in the toprocess queue  in case of
+       transfer errors
+
+    -i Specify the SSH identity filename used for the transfer
+    -u Specify the SSH login name used for the transfer
 
 
 CONFIGURATION FILE
@@ -82,16 +98,19 @@ def getfilename(filename, flowdirs,re):
     filename=filename.replace('./','')
     for d in flowdirs:
         f  = d  + '/' + filename
-        print "[DBG] Probing ",f
         if os.path.exists(f) == True:
-            print "[DBG] Found it in ",d
             return f
     #Serious error, filename not found, abort
     syslog.syslog('Could not find file (' + filename + ')')
     print '[ERROR] Could not find file (' + filename + ')'
     print '[ERROR] Looked up in '+str(flowdirs) + '\n'
     print "[ERROR] Pushback into queue", filename
-    re.lpush("toprocess",filename)
+    #Check if in PULL or PUSH mode
+    if (re == None):
+        print "NYI Pushback not implemented in PULL mode"
+        sys.exit(1)
+    else:
+        re.lpush("toprocess",filename)
     sys.exit(1)
 
 
@@ -133,16 +152,19 @@ def read_flow_dirs(config):
     return flowdirs
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "hc:")
+    opts, args = getopt.getopt(sys.argv[1:], "hc:f:")
 except getopt.GetoptError, err:
     sys.stderr.write(str(err)+'\n')
     usage(1)
 
+queryFullPath = None
 for o, a in opts:
     if o == "-h":
         usage(0)
     elif o == "-c":
         configfile = a
+    elif o == '-f':
+        queryFullPath = a
     else:
         sys.stderr.write("Invalid command line option\n")
         sys.exit(1)
@@ -161,6 +183,14 @@ try:
     pollinterval   = config.getint("redis","pollinterval")
     flowdirs       = read_flow_dirs(config)
     connecttimeout = config.get('target', 'connecttimeout')
+
+    #Handle pull options server side
+    if (queryFullPath):
+        r = getfilename(queryFullPath, flowdirs,None)
+        print r
+        sys.stdout.flush()
+        sys.exit(0)
+
 
     #Connect to redis
     r = redis.Redis(redis_address, redis_port)
