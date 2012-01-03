@@ -115,8 +115,7 @@ def getfilename(filename, flowdirs,re):
     err('Pushback into queue ' +  filename)
     #Check if in PULL or PUSH mode
     if (re == None):
-        print "NYI Pushback not implemented in PULL mode"
-        sys.exit(1)
+        push_back(filename)
     else:
         re.lpush("toprocess",filename)
     sys.exit(1)
@@ -158,6 +157,15 @@ def read_flow_dirs(config):
             pass
 
     return flowdirs
+
+def push_back(filename):
+    cmd = 'ssh  ' + target_address +' redis-cli lpush toprocess '+filename
+    dbg('Executing ' + cmd)
+    r = os.system(cmd)
+    if (r !=0):
+        err('Pushback failed, the filename '+filename + ' must be processed\
+ manually')
+        sys.exit(1)
 
 def push_mode(config):
     redis_address  = config.get('redis','address')
