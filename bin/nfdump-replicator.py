@@ -199,6 +199,26 @@ def push_back(filename):
 manually err='+str(e))
         sys.exit(1)
 
+def get_remote_file(name):
+    try:
+        cmd = ['ssh', target_address,'nfdump-replicator.py','-f',name]
+        dbg('Executing ' + str(cmd))
+        process = subprocess.Popen(cmd,shell=False,stdout=subprocess.PIPE,
+                                   stderr=None)
+        buf = []
+        for f in process.stdout:
+            buf.append(f)
+        process.wait()
+        if process.returncode != 0:
+            raise OSError('Bad exit code')
+        if len(buf) == 0:
+            return None
+        else:
+            return buf[0].replace('\n','')
+    except OSError,e:
+        err('get_remote_file failed ' +str(e)  )
+        sys.exit(1)
+
 def push_mode(config):
     redis_address  = config.get('redis','address')
     redis_port     = config.getint('redis','port')
