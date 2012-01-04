@@ -180,8 +180,12 @@ def transfer_file(a, r):
         sys.exit(1)
 
 def transfer_remote_file(a):
+    tf = target_dir + os.sep + os.path.basename(a)
     try:
-        #TODO check if a similar file already exists
+        if os.path.exists(tf):
+            err("The file " + tf + " already exists on the target system, shutdown")
+            push_back(os.path.basename(a))
+            sys.exit(1)
         cmd = 'scp -o ConnectTimeout=' + str(connecttimeout) +\
               ' -l ' +str(bwlimit) + ' ' + target_address \
                + ':'+a + ' ' + target_dir
@@ -197,10 +201,8 @@ def transfer_remote_file(a):
 
     except OSError,e:
         sys.stderr.write('OS error'+str(e)+'\n')
-        f = os.path.basename(a)
-        push_back(f)
+        push_back(os.path.basename(a))
         #Remove partial file
-        tf = target_dir + os.sep + f
         dbg("Removing partial written file "+tf)
         os.remove(tf)
         sys.stderr.write('Stop transfer process\n')
