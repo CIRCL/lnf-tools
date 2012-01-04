@@ -29,6 +29,13 @@ import os
 import syslog
 import subprocess
 
+import socket
+import fcntl
+import struct
+
+
+ipaddress = None
+
 def usage(exitcode):
     print """nfdump-replicator
 
@@ -95,12 +102,21 @@ GPLv3
 
 configfile="/etc/nfdump-replicator"
 
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
 def dbg(msg):
-    sys.stderr.write('[DBG] '+ msg + ' \n' )
+    sys.stderr.write('[DBG '+str(ipaddress)+'] '+ msg + ' \n' )
 
 
 def err(msg):
-    sys.stderr.write('[ERR] ' + msg + '\n' )
+    sys.stderr.write('[ERR '+str(ipaddress)+'] ' + msg + '\n' )
 
 def getfilename(filename, flowdirs,re):
     filename=filename.replace('./','')
@@ -264,6 +280,7 @@ for o, a in opts:
         sys.stderr.write("Invalid command line option\n")
         sys.exit(1)
 
+ipaddress = get_ip_address("eth0")
 #Load config file access all fields to test if they are set
 try:
     config = ConfigParser.ConfigParser()
