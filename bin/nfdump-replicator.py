@@ -182,12 +182,21 @@ def read_flow_dirs(config):
     return flowdirs
 
 def push_back(filename):
-    cmd = 'ssh  ' + target_address +' redis-cli lpush toprocess '+filename
-    dbg('Executing ' + cmd)
-    r = os.system(cmd)
-    if (r !=0):
+    try:
+        cmd = ['ssh',target_address, 'redis-cli','lpush','toprocess',filename]
+        dbg('Executing ' + str(cmd))
+        process = subprocess.Popen(cmd,shell=False,stdout=subprocess.PIPE, \
+                                   stderr=None)
+        #Consume and discard stdout of pushback
+        for i in process.stdout:
+            pass
+        process.wait()
+
+        if (process.returncode !=0):
+            raise OSError('Bad exitcode')
+    except OSError,e:
         err('Pushback failed, the filename '+filename + ' must be processed\
- manually')
+manually err='+str(e))
         sys.exit(1)
 
 def push_mode(config):
