@@ -135,7 +135,8 @@ def getfilename(filename, flowdirs,re):
         push_back(filename)
     else:
         re.lpush("toprocess",filename)
-    sys.exit(1)
+    #A different exit code is returned than the default error code 1
+    sys.exit(2)
 
 
 def get_next_file():
@@ -178,6 +179,35 @@ def transfer_file(a, r):
         sys.stderr.write('Stop transfer process\n')
         sys.exit(1)
 
+def transfer_remote_file(a):
+    try:
+        #TODO check if a similar file already exists
+        cmd = 'scp -o ConnectTimeout=' + str(connecttimeout) +\
+              ' -l ' +str(bwlimit) + ' ' + target_address \
+               + ':'+a + ' ' + target_dir
+        dbg("cmd = "+cmd)
+        #Spawn a new shell to catch different exit code if CTRL+C
+        #is hit
+        r= os.system(cmd)
+        if (r != 0):
+            raise OSError('Command failed, bad exit code')
+
+        #Put the file in the delete queue
+        enqueue_todelete(os.path.basename(a))
+
+    except OSError,e:
+        sys.stderr.write('OS error'+str(e)+'\n')
+        f = os.path.basename(a)
+        push_back(f)
+        #Remove partial file
+        tf = target_dir + os.sep + f
+        dbg("Removing partial written file "+tf)
+        os.remove(tf)
+        sys.stderr.write('Stop transfer process\n')
+        sys.exit(1)
+
+
+
 def read_flow_dirs(config):
     flowdirs=[]
     i=0
@@ -215,6 +245,25 @@ def push_back(filename):
 manually err='+str(e))
         sys.exit(1)
 
+def enqueue_todelete(filename):
+    try:
+        cmd = ['ssh',target_address, 'redis-cli','lpush','todelete',filename]
+        dbg('Executing ' + str(cmd))
+        process = subprocess.Popen(cmd,shell=False,stdout=subprocess.PIPE, \
+                                   stderr=None)
+        #Consume and discard stdout of pushback
+        for i in process.stdout:
+            pass
+        process.wait()
+
+        if (process.returncode !=0):
+            raise OSError('Bad exitcode')
+    except OSError,e:
+        err('Could not put file ' + filename +' in delete queue')
+        sys.exit(1)
+
+
+
 def get_remote_file(name):
     try:
         cmd = ['ssh', target_address,'nfdump-replicator.py','-f',name]
@@ -225,7 +274,7 @@ def get_remote_file(name):
         for f in process.stdout:
             buf.append(f)
         process.wait()
-        if process.returncode != 0:
+        if process.returncode != 0 and process.returncode != 2:
             raise OSError('Bad exit code')
         if len(buf) == 0:
             return None
@@ -268,6 +317,23 @@ except getopt.GetoptError, err:
     sys.stderr.write(str(err)+'\n')
     usage(1)
 
+def pull_mode():
+    while True:
+        filename = get_next_file()
+        if (filename == None):
+            dbg("<Pull> No filename is ready go to sleep for "+\
+                  str(pollinterval) +" seconds")
+            time.sleep(pollinterval)
+            dbg("<Pull> Wake up")
+        else:
+            dbg("<Pull> Got filename: "+filename)
+            afile = get_remote_file(filename)
+            if afile == None:
+                dbg("The file was not found, push it back and stop")
+                push_back(filename)
+                sys.exit(1)
+            transfer_remote_file(afile)
+
 queryFullPath = None
 for o, a in opts:
     if o == "-h":
@@ -303,7 +369,8 @@ try:
         sys.stdout.flush()
         sys.exit(0)
 
-    push_mode(config)
+    #push_mode(config)
+    pull_mode()
 
 except ConfigParser.NoOptionError,e:
     sys.stderr.write("Config Error: "+str(e) + '\n')
