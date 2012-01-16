@@ -33,7 +33,6 @@ import socket
 import fcntl
 import struct
 
-
 ipaddress = None
 
 def usage(exitcode):
@@ -112,11 +111,13 @@ def get_ip_address(ifname):
     )[20:24])
 
 def dbg(msg):
-    sys.stderr.write('[DBG '+str(ipaddress)+'] '+ msg + ' \n' )
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    sys.stderr.write('[DBG '+str(ipaddress)+ ' ' + ts+'] '+ msg + ' \n' )
 
 
 def err(msg):
-    sys.stderr.write('[ERR '+str(ipaddress)+'] ' + msg + '\n' )
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    sys.stderr.write('[ERR '+str(ipaddress)+' ' + ts+'] ' + msg + '\n' )
 
 def getfilename(filename, flowdirs,re):
     filename=filename.replace('./','')
