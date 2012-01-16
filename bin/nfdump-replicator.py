@@ -148,6 +148,8 @@ def get_next_file():
     for f in process.stdout:
         buf.append(f)
     process.wait()
+    if (len(buf) == 0):
+        return None
     f = buf[0]
     if f == '(nil)\n':
         dbg('No file name is available' )
