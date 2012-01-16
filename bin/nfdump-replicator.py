@@ -182,16 +182,39 @@ def transfer_file(a, r):
         sys.stderr.write('Stop transfer process\n')
         sys.exit(1)
 
+def create_file_struct(filename, root):
+    ofilename = filename
+    filename = filename.replace('nfcapd.','')
+    year = filename[0:4]
+    month = filename[4:6]
+    day = filename[6:8]
+
+    target = root + os.sep + year
+    if os.path.exists(target) == False:
+        os.mkdir(target)
+
+    target = target + os.sep + month
+    if os.path.exists(target) == False:
+        os.mkdir(target)
+    target = target + os.sep + day
+
+    if os.path.exists(target) == False:
+        os.mkdir(target)
+    target = target + os.sep + os.path.basename(ofilename)
+    return target
+
 def transfer_remote_file(a):
-    tf = target_dir + os.sep + os.path.basename(a)
+    tf = None
     try:
+        b = os.path.basename(a)
+        tf = create_file_struct(b,target_dir)
         if os.path.exists(tf):
             err("The file " + tf + " already exists on the target system, shutdown")
             push_back(os.path.basename(a))
             sys.exit(1)
         cmd = 'scp -o ConnectTimeout=' + str(connecttimeout) +\
               ' -l ' +str(bwlimit) + ' ' + target_address \
-               + ':'+a + ' ' + target_dir
+               + ':'+a + ' ' + tf
         dbg("cmd = "+cmd)
         #Spawn a new shell to catch different exit code if CTRL+C
         #is hit
@@ -206,8 +229,9 @@ def transfer_remote_file(a):
         sys.stderr.write('OS error'+str(e)+'\n')
         push_back(os.path.basename(a))
         #Remove partial file
-        dbg("Removing partial written file "+tf)
-        os.remove(tf)
+        if tf != None:
+            dbg("Removing partial written file "+tf)
+            os.remove(tf)
         sys.stderr.write('Stop transfer process\n')
         sys.exit(1)
 
