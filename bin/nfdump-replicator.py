@@ -154,7 +154,9 @@ def get_next_file():
     if f == '(nil)\n':
         dbg('No file name is available' )
         f=None
-
+    if f == '\n':
+	dbg('New line was returned -> no file is available')
+	f =None
     dbg('Subprocess exit code ' + str(process.returncode))
     if process.returncode != 0:
         err('Acquisition of next file failed ')
@@ -388,7 +390,7 @@ try:
     bwlimit        = config.getint('target','bwlimit')
     target_dir     = config.get('target', 'directory')
     pollinterval   = config.getint("redis","pollinterval")
-    flowdirs       = read_flow_dirs(config)
+    #flowdirs       = read_flow_dirs(config)
     connecttimeout = config.get('target', 'connecttimeout')
 
     #Handle pull options server side
