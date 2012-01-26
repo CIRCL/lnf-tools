@@ -348,7 +348,15 @@ except getopt.GetoptError, err:
     sys.stderr.write(str(err)+'\n')
     usage(1)
 
-def pull_mode():
+def put_in_toindex_queue(r, afile):
+    r.rpush("toindex",afile)
+
+
+def pull_mode(config):
+    redis_address  = config.get('redis','address')
+    redis_port     = config.getint('redis','port')
+    r = redis.Redis(redis_address, redis_port)
+
     while True:
         filename = get_next_file()
         if (filename == None):
@@ -364,6 +372,7 @@ def pull_mode():
                 push_back(filename)
                 sys.exit(1)
             transfer_remote_file(afile)
+            put_in_toindex_queue(r,filename)
 
 queryFullPath = None
 for o, a in opts:
@@ -401,7 +410,7 @@ try:
         sys.exit(0)
 
     #push_mode(config)
-    pull_mode()
+    pull_mode(config)
 
 except ConfigParser.NoOptionError,e:
     sys.stderr.write("Config Error: "+str(e) + '\n')
