@@ -79,7 +79,8 @@ def err(msg):
 def get_next_file(r):
     filename = r.lpop("toindex")
     if filename!=None:
-        filename=filename.replace('\n','')
+        filename= filename.replace('\n','')
+        filename = os.path.basename(filename)
     return filename
 
 def daemon(nfroot, dbroot, prg, pidfile):
