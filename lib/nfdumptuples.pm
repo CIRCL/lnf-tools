@@ -21,12 +21,16 @@
 
 use strict;
 package nfdumptuples;
-
+use Data::Dumper;
 sub new{
-    my ($type) = @_;
+    my ($type,$isVolume,$threshold) = @_;
     my $self={};
+    $self->{'isVolume'} = $isVolume;
+    $self->{'threshold'} = $threshold;
     bless $self, $type;
+    $self->{'data'} = {};
     return $self;
+
 
 }
 
@@ -37,8 +41,42 @@ sub process {
         return 0;
     }
     if (exists($fields->{'srcaddr'}) and exists($fields->{'dstaddr'})){
-        print $fields->{'srcaddr'},",",$fields->{'dstaddr'},"\n";
+        my $srcaddr = $fields->{'srcaddr'};
+        my $dstaddr = $fields->{'dstaddr'};
+        if (!exists($self->{'data'}->{$srcaddr})){
+            $self->{'data'}->{$srcaddr} = {};
+        }
+        if (!exists($self->{'data'}->{$srcaddr}->{$dstaddr})){
+            $self->{'$data'}->{$dstaddr}->{$srcaddr} = 0;
+        }
+        $self->{'data'}->{$srcaddr}->{$dstaddr}+=$fields->{'bytes'};
+        if (!defined($self->{'isVolume'})){
+            print $srcaddr,",",$dstaddr,"\n";
+        }
     }
 }
 
+sub print_volume_flows{
+    my ($self) = @_;
+    #print Dumper($self->{'data'});
+    my $buf = {};
+    for my $sip (keys %{$self->{data}}){
+        for my $dip (keys %{$self->{data}->{$sip}}){
+            my $tup = "$sip,$dip";
+            my $b = $self->{'data'}->{$sip}->{$dip};
+            if ($b<$self->{'threshold'}){
+                next;
+            }
+            if (!exists($buf->{$b})){
+                $buf->{$b} =[];
+            }
+            push(@{$buf->{$b}},$tup);
+        }
+    }
+    for my $vol (sort {$b <=> $a}keys%{$buf}){
+        my $tup = $buf->{$vol};
+        my $t = join(',',@{$buf->{$vol}});
+        print "$vol $t\n";
+    }
+}
 1;

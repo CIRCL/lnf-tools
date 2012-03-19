@@ -36,6 +36,8 @@ Use a nfdump output as input (long format) and display the tuples
 OPTIONS
 
     -h Displays this screen
+    -v Shows the exchanged volume between tuples
+    -t Specify a treshold of exchanged volume
 
 EXAMPLE
 
@@ -55,13 +57,18 @@ exit($code);
 
 my $isHelp = undef;
 my $source=undef;
-my $result = GetOptions ("help"=>\$isHelp) or &usage(1);
+my $isVolume = undef;
+my $threshold = 0;
+my $result = GetOptions ("help"=>\$isHelp,"volume"=>\$isVolume, "threshold=s"=>\$threshold) or &usage(1);
 
 if (defined($isHelp)){
     &usage(1);
 }
 
-my $handler = nfdumptuples->new($source);
+my $handler = nfdumptuples->new($isVolume,$threshold);
 my $parser=nfdump->new($handler);
 $parser->parse();
+if (defined($isVolume)){
+    $handler->print_volume_flows();
+}
 exit(1);
