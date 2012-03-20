@@ -225,6 +225,8 @@ quotation marks.
                     fn=self.get_filename(db,i)
                     afn  = self.probe_file(fn)
                     files.append(afn)
+        n = len(files)
+        self.kco.dbg("The IP address " + self.ipaddress + " was found in "+str(n) +" kch files")
         return files
 
     def print_filenames(self, startdate, enddate):
