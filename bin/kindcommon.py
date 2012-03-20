@@ -72,6 +72,22 @@ class KindCommon(object):
         sys.stdout.write("["+ts+"] "+msg + '\n')
         sys.stdout.flush()
 
+    def read_flow_dirs_struct(self):
+        flowdirs = []
+        try:
+            d = self.config.get("flowstructdir","root")
+            for yearstr in os.listdir(d):
+                year = int(yearstr)
+                for monthstr in os.listdir(d+os.sep+yearstr):
+                    month = int(monthstr)
+                    flowdirs.append(d + os.sep + yearstr + os.sep + monthstr)
+        except ConfigParser.NoOptionError,e:
+            pass
+
+        except ValueError,e:
+            self.dbg("Expected numeric entry  "+str(e)+"\n")
+
+        return flowdirs
     #Returns the directories containing the files created by nfcapd or that
     #were transferred via other channels
     def read_flow_dirs(self):
@@ -364,6 +380,13 @@ class TestKindCommon(unittest.TestCase):
         self.assertEqual(kco.get_ipaddress_from_filter("port 22"),[])
         self.assertEqual(kco.get_ipaddress_from_filter("10.0.0.1 or 192.168.1.1"),['10.0.0.1','192.168.1.1'])
         self.assertEqual(kco.get_ipaddress_from_filter("122:123:abc::1"),['122:123:abc::1'])
-
+    def test_parsers(self):
+        filename="../t/kindcommon/kindexer.cfg"
+        f = open(filename,'r')
+        config = ConfigParser.ConfigParser()
+        config.readfp(f)
+        f.close()
+        kco = KindCommon(config)
+        y = kco.read_flow_dirs_struct()
 if __name__=='__main__':
     unittest.main()
