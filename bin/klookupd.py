@@ -58,7 +58,7 @@
 #query(pcap_filter, format, [timestamp])
 
 #TODO sort list the most recent first in case of truncated
-#TODO test timeout of nfdump -> endless loop
+#FIXE if nfdump hangs the entire daemon hangs ...
 import redis
 import kindcommon
 import ConfigParser
