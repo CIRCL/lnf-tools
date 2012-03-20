@@ -89,6 +89,7 @@ class KlookupIPC(object):
     NFDUMP_FAILURE = "NFDUMP_FAILURE"
     INTERRUPTED_JOB = "INTERRUPTED_JOB"
     COMPLETED = "COMPLETED"
+    NOT_FOUND  = "NOT_FOUND"
 
     def __init__(self, configFile):
         self.configFile  = configFile
@@ -344,7 +345,7 @@ class KlookupIPC(object):
         for db in databases:
             i = i +1
             self.update_progress_status(uuid,i, ndb)
-            y=db.get(ky) #TEST seems to return something valid
+            y=db.get(ky)
             if y != None:
                 indexes =  self.kco.parse_index_value(y)
                 for i in indexes:
@@ -366,6 +367,9 @@ class KlookupIPC(object):
                     if status == KlookupIPC.TRUNCATED:
                         self.kco.dbg("The result queue in redis is already full do not go through the other databases")
                         return KlookupIPC.TRUNCATED
+            else:
+                self.kco.dbg("The IP address " + ipaddress + "has not been found in the indices")
+                status = KlookupIPC.NOT_FOUND
         return status
 
     def dispatch_format(self, files, addr, uuid, pcap_filter, style, startdate,enddate):
