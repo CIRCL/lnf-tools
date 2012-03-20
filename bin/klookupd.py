@@ -100,7 +100,8 @@ class KlookupIPC(object):
         redishost = self.config.get('redis','host')
         redisport = int(self.config.get('redis', 'port'))
         self.rd = redis.Redis(redishost, redisport)
-        self.rd.select(int(self.config.get('daemon','dbnum')))
+        #FIXME Not supported by Redis module?
+        #self.rd.select(int(self.config.get('daemon','dbnum')))
         self.sleeptime = int(self.config.get('daemon','sleeptime'))
         self.klu = klookup.Klookup(configFile)
         self.klu.load()
@@ -337,18 +338,18 @@ class KlookupIPC(object):
     def getfull_flowsDup(self, ipaddress, uuid, pcap_filter,startdate, enddate):
         databases = self.klu.open_databases(startdate, enddate)
         ndb = len(databases)
-        ky = self.kco.build_key(ipaddress)
+        ky = self.kco.build_key_binary(ipaddress)
         i = 0.0
         status = KlookupIPC.TRUNCATED
         for db in databases:
             i = i +1
             self.update_progress_status(uuid,i, ndb)
-            y=db.get(ky)
+            y=db.get(ky) #TEST seems to return something valid
             if y != None:
                 indexes =  self.kco.parse_index_value(y)
                 for i in indexes:
                     fn=self.klu.get_filename(db,i)
-                    afn  = self.klu.probe_file(fn)
+                    afn  = self.klu.probe_file(fn) #FIXME Handle the case where the probes were mot successfull
                     cmd = []
                     cmd.append( self.prg )
                     #Adds the static arguments
@@ -357,6 +358,7 @@ class KlookupIPC(object):
                     cmd.append(self.prgargs)
                     cmd.append("-r"  + afn)
                     cmd.append(pcap_filter)
+                    self.kco.dbg("Executing command: "+str(cmd))
                     queue = "bc:" + uuid
                     status = self.popen_to_redis(cmd,queue)
                     #The results expire whatever the user does

@@ -216,7 +216,7 @@ quotation marks.
         dbdir = self.config.get('indexer','dbdir')
         self.open_databases(startdate, enddate)
         files = []
-        ky = self.kco.build_key(self.ipaddress)
+        ky = self.kco.build_key_binary(self.ipaddress)
         for db in self.dbobjs:
             y=db.get(ky)
             if y != None:
