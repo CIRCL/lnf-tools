@@ -88,7 +88,7 @@ class KindCommon(object):
 
         except ValueError,e:
             self.dbg("Expected numeric entry  "+str(e)+"\n")
-
+        self.dbg("Identified " +str(len(flowdirs)) + " kch files")
         return flowdirs
     #Returns the directories containing the files created by nfcapd or that
     #were transferred via other channels
