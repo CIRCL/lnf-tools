@@ -27,6 +27,7 @@ import redis
 import time
 import unittest
 import string
+import socket
 
 class KindCommon(object):
 
@@ -80,7 +81,8 @@ class KindCommon(object):
                 year = int(yearstr)
                 for monthstr in os.listdir(d+os.sep+yearstr):
                     month = int(monthstr)
-                    flowdirs.append(d + os.sep + yearstr + os.sep + monthstr)
+                    for daystr in os.listdir(d+os.sep+yearstr+os.sep+monthstr):
+                        flowdirs.append(d + os.sep + yearstr + os.sep + monthstr+os.sep+daystr)
         except ConfigParser.NoOptionError,e:
             pass
 
@@ -225,6 +227,13 @@ class KindCommon(object):
         else:
             return "n4:" + addr
 
+    def build_key_binary(self, addr):
+        if addr.find(':') != -1:
+            return "n6:" + addr
+        else:
+            return socket.inet_aton(addr)
+    #TODO inet_aton can throw socket.error
+            #return "n4:" + addr
 
     def check_pcap_alph(self, pcapfilter):
         if pcapfilter == None:
