@@ -229,11 +229,10 @@ class KindCommon(object):
 
     def build_key_binary(self, addr):
         if addr.find(':') != -1:
-            return "n6:" + addr
+            return socket.inet_pton(socket.AF_INET6,addr)
         else:
             return socket.inet_aton(addr)
-    #TODO inet_aton can throw socket.error
-            #return "n4:" + addr
+    #FIXME inet_aton can throw socket.error -> filtered before
 
     def check_pcap_alph(self, pcapfilter):
         if pcapfilter == None:
