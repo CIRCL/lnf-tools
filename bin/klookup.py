@@ -47,7 +47,7 @@ class Klookup(object):
             #Check if mandatory directories exist
             if os.path.exists(p) == False:
                 raise IOError("dbdir="+ p +" does not exists ")
-            self.flowdirs  = self.kco.read_flow_dirs()
+            self.flowdirs  = self.kco.read_flow_dirs_struct()
         except ConfigParser.NoOptionError,e:
             sys.stderr.write("Config Error: "+str(e) + '\n')
             sys.exit(1)
