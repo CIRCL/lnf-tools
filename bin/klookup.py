@@ -177,6 +177,7 @@ quotation marks.
         return files
 
     def get_databases_list(self, startdate=None, enddate=None):
+        self.kco.dbg("Started get_databases_list")
         d  = self.config.get('indexer','dbdir')
         files = []
         try:
@@ -195,10 +196,12 @@ quotation marks.
         self.kco.dbg("Identified " +str(len(files)) + " kch files")
 
         rfiles = self.get_relevant_files(files, startdate, enddate)
+        self.kco.dbg("End get_databases_list")
         return rfiles
 
 
     def open_databases(self, startdate=None,enddate=None):
+        self.kco.dbg("Started open_databases")
         self.dbobjs = []
         for i in self.get_databases_list(startdate, enddate):
             db = DB()
@@ -206,6 +209,7 @@ quotation marks.
                 print >>sys.stderr, "open error: " + str(db.error())
                 sys.exit(1)
             self.dbobjs.append(db)
+        self.kco.dbg("End open_databases")
         return self.dbobjs
 
     def probe_file(self,fn):
