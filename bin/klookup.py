@@ -151,6 +151,8 @@ quotation marks.
         sfiles = []
         for f in files:
             f = f.replace(dbdir,'')
+            if f.startswith('/'):
+                f = f[1:]
             sfiles.append(f)
         #The ascii sort should sort it accordingly time
         #The year is first hence the lowest year should be first
