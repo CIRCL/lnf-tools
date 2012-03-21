@@ -29,6 +29,7 @@ import time
 import kindcommon
 import ConfigParser
 import unittest
+import pprint
 
 class Klookup(object):
 
@@ -158,6 +159,7 @@ quotation marks.
         #idem for the days
         sfiles.sort()
         fl = len(sfiles)
+        self.kco.dbg("Searching in " +str(sfiles))
         if fl == 0:
             return []
         startpos = self.get_file_position(sfiles, startdate, 0)
@@ -169,6 +171,7 @@ quotation marks.
         self.kco.dbg('get_relevant_files: endpos=' +  str(endpos))
         #The : notation should not throw an exception
         stfiles = sfiles[startpos:endpos+1]
+        self.kco.dbg("Reduced index set "+str(stfiles))
         #Add prefix to the files
         files= []
         for f in stfiles:
