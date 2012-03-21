@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-#TODO Add sorting option i.e. reverse sorting
 #TODO implement pcap filter here aswell
 #TODO There should not be any missing databases. Maybe the closed database could be searched
 import os
