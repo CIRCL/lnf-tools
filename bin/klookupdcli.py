@@ -63,6 +63,12 @@ klookupdcli.py -c kindexer.cfg -s "print_full"  -f "ip 10.0.0.1"
 
 Gets all the indexed flows including the IP address 10.0.0.1
 
+klookupdcli.py -c kindexer.cfg -s "print_full"  -f "ip 10.0.0.1"  \\
+               -t 2011-09-16 -e 2011-09-16
+
+Seraches all the flows including the IP address 10.0.0.1 in the time frame
+2011-09-16 - 2011-09-17
+
 AUTHOR
     Gerard Wagener
 
