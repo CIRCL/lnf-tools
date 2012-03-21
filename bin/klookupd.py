@@ -116,22 +116,10 @@ class KlookupIPC(object):
 
         self.linecounter = 0
 
-    def check_ticket(self, uuid):
-        k = 'v:'+ uuid
-        if self.rd.get(k) == '1':
-            self.kco.dbg('Ticket '+uuid+ ' is valid and has not expired')
-            return True
-        #Default not valid
-        self.kco.dbg('Ticket ' + uuid + ' is unknown or has been expired')
-        return False
-
     def create_ticket(self):
         u = uuid.uuid4()
         self.kco.dbg("Created ticket "+str(u))
         self.rd.rpush("tickets",str(u))
-        #Keep a copy as a key for further validation
-        self.rd.set('v:'+ str(u),1)
-        self.rd.expire('v:'+str(u),self.expire)
 
     def get_job_num(self):
         k = len(self.rd.keys('bs:*'))
@@ -168,8 +156,6 @@ class KlookupIPC(object):
         self.rd.expire("bs:" + uuid, self.expire)
 
     def get_status(self,uuid):
-        if self.check_ticket(uuid) == False:
-            raise KlookupException('Invalid ticket '+uuid)
         a = 'bs:'+uuid
         return self.rd.get(a)
 
@@ -442,8 +428,6 @@ class KlookupIPC(object):
             sys.exit(1)
 
     def get_query_result(self, uuid):
-        if self.check_ticket(uuid) == False:
-            raise KlookupException('Invalid ticket '+ uuid)
         k = 'bs:'+uuid
         status = self.rd.get(k)
         self.kco.dbg('Status of the job result request '+str(status))
