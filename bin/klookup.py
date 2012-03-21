@@ -173,12 +173,15 @@ quotation marks.
         self.kco.dbg('get_relevant_files: endpos=' +  str(endpos))
         #The : notation should not throw an exception
         stfiles = sfiles[startpos:endpos+1]
-        self.kco.dbg("Reduced index set "+str(stfiles))
         #Add prefix to the files
         files= []
         for f in stfiles:
             #The slash has already be added to dbdir
             files.append(dbdir + f)
+        #Reverse the list in case the have the most recent flows first in
+        #case the results are truncated
+        files.reverse()
+        self.kco.dbg("Reduced index set "+str(files))
         return files
 
     def get_databases_list(self, startdate=None, enddate=None):
