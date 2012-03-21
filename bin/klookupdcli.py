@@ -57,6 +57,12 @@ If no start state end end date is specified, the entire databases are searched
 which may take some time. Invalid timestamps are ignored and no specific
 error is returned.
 
+EXAMPLES
+
+klookupdcli.py -c kindexer.cfg -s "print_full"  -f "ip 10.0.0.1"
+
+Gets all the indexed flows including the IP address 10.0.0.1
+
 AUTHOR
     Gerard Wagener
 
