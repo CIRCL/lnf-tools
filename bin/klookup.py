@@ -177,12 +177,23 @@ quotation marks.
         return files
 
     def get_databases_list(self, startdate=None, enddate=None):
-        dbdir  = self.config.get('indexer','dbdir')
+        d  = self.config.get('indexer','dbdir')
         files = []
-        for dirname, dirnames, filenames in os.walk(dbdir):
-            for filename in filenames:
-                afile = os.path.join(dirname, filename)
-                files.append(afile)
+        try:
+            for yearstr in os.listdir(d):
+                year = int(yearstr)
+                for monthstr in os.listdir(d+os.sep+yearstr):
+                    month = int(monthstr)
+                    for daystr in os.listdir(d+os.sep+yearstr+os.sep+monthstr):
+                        files.append(d + os.sep + yearstr + os.sep + monthstr+os.sep+daystr)
+
+        except ConfigParser.NoOptionError,e:
+            pass #FIXME Need to do additional stuff
+
+        except ValueError,e:
+            self.dbg("Expected numeric entry  "+str(e)+"\n")
+        self.kco.dbg("Identified " +str(len(files)) + " kch files")
+
         rfiles = self.get_relevant_files(files, startdate, enddate)
         return rfiles
 
