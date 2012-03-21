@@ -328,6 +328,8 @@ class KlookupIPC(object):
         ky = self.kco.build_key_binary(ipaddress)
         i = 0.0
         status = KlookupIPC.TRUNCATED
+        if len(databases) == 0:
+            status = KlookupIPC.NOT_FOUND
         for db in databases:
             i = i +1
             self.update_progress_status(uuid,i, ndb)
