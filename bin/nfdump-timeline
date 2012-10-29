@@ -1,0 +1,204 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2012 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2012 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use Data::Dumper;
+use Getopt::Long;
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-timeline [-s stats [-i <item> -r <rank>]] [-h] 
+
+
+Creates a timeline for ranked items (nfdump-topproto, nfdump-topports,...).
+The data for each time slot needs to be included in a file.
+
+OPTIONS
+
+    -h Displays this screen
+    -s Specify the output directory containing nfdump-topports files
+    -i Use item (such as port number, protocol) for building the timeline
+    -r Use the rank (such as the first topport or the first topproto for 
+       doing the ranking). The rank is used by default and is set to one.
+
+FILE FORMAT
+
+rank item value 
+
+The following example shows that on rank 1 TCP has been observed 100 times.
+
+1 TCP 100
+
+
+USAGE EXAMPLES
+
+In the following example, 16 instances of the tool nfdump-topports compute 
+the port ranking in parallel for a daily netflow export. The daily netflow
+export is in a file with the extension ".flows". Of course nfdump-topports
+can also read the output directly from the output of nfdump. Each instance
+of nfdump-topports creates a file in the directory "topports".
+
+ls *.flows | parallel -j 16 "cat {1} | nfdump-topports -s 10.0.0.23 >topports/{1}.log
+
+The files in topports are then read with the tool nfdump-timeline. The 
+directory is passed via the the -s switch.  The option -i has the value 
+corresponding to port 80. Hence, the occurences for the port 80 are 
+displayed prefixed by a time. For instance, on 2012-10-01, the port 
+80 has been observed 1337 times.
+
+nfdump-timeline -s topports/ -i 80
+
+#Date Frequency  (item=80)
+2012-10-01 1337
+2012-10-02 1840
+2012-10-03 1998
+
+However, sometimes it is not known in advance which port is used. As
+tcp-topports is ranking the ports, the corresponding rank can be used.
+
+In the example below, the second commonly used port is displayed.
+On 2012-10-01, the secondly most used port is 443 and was used 
+2234 times. The next day, the port 80 was used 4954 times. 
+
+
+nfdump-timeline -s topports/ -r 2
+#Date Protocol Frequency (rank = 2)
+2012-10-01 443 2234
+2012-10-02 80 4954
+2012-10-03 443 23992
+
+If the most used port is queried the parameter 1 has to be passed as rank.
+If the third used port is queried the parameter 4 has to be passed as rank
+and so on.
+
+
+However, the program nfdump-timeline can also be used with other kind of
+aggregated data such as the used protocols.
+
+In the example below, the number of occurences of UDP have been queried by
+day.
+
+nfdump-timeline -s topproto/ -i UDP
+#Date Frequency  (item=UDP)
+2012-10-01 42
+2012-10-02 2
+2012-10-03 16
+
+
+In the example below the top-protocol (tcp, udp, icmp) is queried. 
+On 2012-10-01 TCP was observed 31280 times.
+
+nfdump-timeline -s topproto/ -r 1
+
+#Date Protocol Frequency (rank = 1)
+2012-10-01 TCP 31280
+2012-10-02 TCP 23796
+
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+
+sub write_preamble{
+    my ($item, $rank) = @_;
+    #The item mode is assumed
+    if (defined($item)){
+        print "#Date Frequency  (item=$item)\n";
+        return;
+    }
+    #The rank mode is assumed
+    print "#Date Protocol Frequency (rank = $rank)\n";
+}
+
+sub process_file{
+    my ($filename,$label,$item,$rank) = @_;
+    #Remove the file extension
+    $label =~s/\..+s//g;
+    open F,"<$filename" or die "($filename) $!\n";
+    while (my $line=<F>){
+        if ($line=~/^#/){
+            next;
+        }
+        my ($r,$it, $count) = split(' ' ,$line);
+        #Convert rank to integer
+        $r = $r*1;
+
+        #Do the dispatching on what should be displayed
+        if (defined($item)){
+            if ($it eq $item){
+                #The item should be only be present once, so stop
+                print "$label $count\n";
+                return; 
+            }
+        }
+        if ($rank >0){
+            if ($r == $rank){
+                print "$label $it $count\n";
+            }
+        }
+    }
+    close F;
+}
+
+my $isHelp = undef;
+my $source=undef;
+my $item = undef;
+my $rank = 1;
+
+my $result = GetOptions ("source=s"=>\$source,"item=s"=>\$item,"rank=i"=>\$rank) or usage(1);
+
+if (!defined($source)){
+    &usage(1);
+}
+
+if (defined($item)){
+    $rank = 0;
+}
+
+$source=~s/\/$//g;
+opendir(H,$source) or die "($source)$!\n";
+my @files = readdir(H);
+closedir(H);
+my @sfiles = sort @files;
+
+&write_preamble($item, $rank);
+
+foreach my $file (@sfiles){
+    if ($file eq '.' or $file eq '..'){
+        next;
+    }
+    if ($file eq ''){
+        next;
+    }
+    my $f = "$source/$file";
+    &process_file($f,$file,$item,$rank);
+}
+
+exit(1);
