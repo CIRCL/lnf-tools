@@ -56,7 +56,7 @@ export is in a file with the extension ".flows". Of course nfdump-topports
 can also read the output directly from the output of nfdump. Each instance
 of nfdump-topports creates a file in the directory "topports".
 
-ls *.flows | parallel -j 16 "cat {1} | nfdump-topports -s 10.0.0.23 >topports/{1}.log
+ls *.flows | parallel -j 16 "cat {1} | nfdump-topports -s 10.0.0.23 >topports/{1}.log"
 
 The files in topports are then read with the tool nfdump-timeline. The 
 directory is passed via the the -s switch.  The option -i has the value 
