@@ -28,8 +28,9 @@ sub usage
 nfdump-timeline [-s stats [-i <item> -r <rank>]] [-h] 
 
 
-Creates a timeline for ranked items (nfdump-topproto, nfdump-topports,...).
-The data for each time slot needs to be included in a file.
+Creates a timeline for ranked items (nfdump-topproto, nfdump-topports, 
+nfdump-toptalkers). The data for each time slot needs to be included in 
+a file.
 
 OPTIONS
 
