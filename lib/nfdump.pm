@@ -84,6 +84,8 @@ sub parse_addr
 }
 sub parse_line{
     my ($self,$line,$cnt)=@_;
+    my $entry = {};
+    $entry->{'line'}=$line;
     if ($line=~/^Summary/){
         $self->{'endreached'} = 1;
         return {};
@@ -92,7 +94,6 @@ sub parse_line{
     $line=~s/\s+/ /g;
     if ($cnt==1){
         if ($line ne $self->{'header'}){
-            print "Header does not match, abort\n";
             return {};
         }
     }else{
@@ -105,7 +106,6 @@ sub parse_line{
         }
         my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
         my ($time,$ms) = split('\.',$stime);
-        my $entry = {};
         $entry->{'startDate'} = {};
         $entry->{'startDate'}->{'epoch'} = $self->convert_timestamp($startDate, $stime);
         $entry->{'startDate'}->{'milliseconds'} = $ms;
