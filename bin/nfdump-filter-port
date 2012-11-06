@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2012 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2012 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use Data::Dumper;
+use Getopt::Long;
+use nfdumpports;
+use nfdump;
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-filterport [-h] [-s host -p port] [-m max_port_number] [-f time_frame]
+
+Filter nfdump outputs for a given port and a given host. As some routers do 
+not properly export the TCP flags it is not clear whether a port is a source
+port of a host or a destination port. Therefore, three heuristics are
+proposed in this script.
+
+OPTIONS
+
+    -h Displays this screen
+    -s Specify the IP addresses
+    -p Specify the port that should be analyzed
+    -m Specify the highest port number. [H1]
+    -f Specify the time frame           [H2]
+    -c Specify the minimal occurences 
+       for the given time frame         [H2]
+
+
+By default no heuristic is applied.
+
+
+!This script is experimental and the error rate might be high!
+
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+
+my $isHelp = undef;
+my $source =undef;
+my $port = -1;
+my $maxport = undef;
+my $frame = undef;
+my $mincount = 0;
+
+my $result = GetOptions ("source=s"=>\$source,"port=i"=>\$port,
+"max=i"=>\$maxport, "frame=i"=>\$frame, "count=i"=>\$mincount) or usage(1);
+
+if (!defined($source)){
+    &usage(1);
+}
+
+if ($port <0){
+    print STDERR "A source port must be specified\n";
+    exit(1);
+}
+
+my $handler = nfdumpports->new($source,$port, $maxport, $frame, $mincount);
+my $parser=nfdump->new($handler);
+$parser->parse();
+$handler->flush();
+exit(1);
