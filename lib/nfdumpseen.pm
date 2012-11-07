@@ -43,7 +43,10 @@ sub process {
     #Focus on the source
     if (($fields->{'srcaddr'} eq $self->{'source'}) or ($fields->{'dstaddr'} eq $self->{'source'})){
         #Update first seen
-            my $epoch = $fields->{'startDate'}->{'epoch'};
+            my $epoch = $fields->{'startDate'}->{'epoch'}*1;
+            if ($epoch < 1){
+                return;
+            }
             if ($epoch < $self->{'firstseen'}){
                 $self->{'firstseen'}=$epoch;
                 $self->{'firstseenline'}=$fields->{'line'};
