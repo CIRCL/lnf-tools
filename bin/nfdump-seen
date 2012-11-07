@@ -1,0 +1,78 @@
+#!/usr/bin/perl
+#
+# nfdump-tools - Inspecting the output of nfdump
+#
+# Copyright (C) 2012 CIRCL Computer Incident Response Center Luxembourg (smile gie)
+# Copyright (C) 2012 Gerard Wagener
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use nfdump;
+use nfdumpseen;
+use Getopt::Long;
+
+
+sub usage
+{
+    my $code = shift;
+    print <<END;
+nfdump-seen [-h] [-l|-f] -s ip_address
+
+Export the first/last seen date of a given IP address
+
+
+    -h Displays this screen
+    -l Display last seen timestamp
+    -f Display first seen timestamp
+    -s IP address that is inspected
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPLv3
+
+END
+
+exit($code);
+
+}
+
+my $isHelp    = undef;
+my $source    = undef;
+my $firstseen = undef;
+my $lastseen  = undef;
+my $result = GetOptions ("help"=>\$isHelp, "source=s"=>\$source, 
+                         "firstseen"=>\$firstseen,
+                         "lastseen"=>\$lastseen) or usage(1);
+
+
+if (defined($isHelp)){
+    &usage(0);
+}
+
+if (!defined($source)){
+    print STDERR "A source must be specified\n";
+}
+
+my $handler = nfdumpseen->new($source);
+my $parser=nfdump->new($handler);
+$parser->parse;
+if ($firstseen == 1){
+    print $handler->get_firstseen."\n";
+}
+
+if ($lastseen == 1) {
+    print $handler->get_lastseen."\n";
+}
