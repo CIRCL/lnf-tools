@@ -86,10 +86,6 @@ sub parse_line{
     my ($self,$line,$cnt)=@_;
     my $entry = {};
     $entry->{'line'}=$line;
-    if ($line=~/^Summary/){
-        $self->{'endreached'} = 1;
-        return {};
-    }
     chomp($line);
     $line=~s/\s+/ /g;
     if ($cnt==1){
@@ -104,28 +100,31 @@ sub parse_line{
         if ($line!~/GRE/){
             $line=~s/ G/G/g;
         }
-        my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
-        my ($time,$ms) = split('\.',$stime);
-        $entry->{'startDate'} = {};
-        $entry->{'startDate'}->{'epoch'} = $self->convert_timestamp($startDate, $stime);
-        $entry->{'startDate'}->{'milliseconds'} = $ms;
-        $entry->{'duration'}  = $duration;
-        $entry->{'proto'}     = $proto;
-        my ($addr, $port) = $self->parse_addr($src);
-        $entry->{'srcaddr'} = $addr;
-        $entry->{'srcport'} = $port;
-        my ($addr, $port) = $self->parse_addr($dst);
-        $entry->{'dstaddr'} = $addr;
-        $entry->{'dstport'} = $port;
-        $entry->{'flags'} = $flags;
-        $entry->{'tos'} = $tos;
-        $entry->{'packets'} = $packets;
-        $entry->{'bytes'} = $self->fix_number($bytes);
-        $entry->{'pps'} = $pps;
-        $entry->{'bps'} = $bps;
-        $entry->{'bpp'} = $bpp;
-        $entry->{'flows'} = $flows;
-        return $entry;
+        #Each line has to start with a year >1999
+        if ($line=~/^20/){
+            my ($startDate, $stime, $duration, $proto, $src, $dir, $dst, $flags, $tos, $packets,$bytes, $pps, $bps,$bpp, $flows) = split(' ',$line);
+            my ($time,$ms) = split('\.',$stime);
+            $entry->{'startDate'} = {};
+            $entry->{'startDate'}->{'epoch'} = $self->convert_timestamp($startDate, $stime);
+            $entry->{'startDate'}->{'milliseconds'} = $ms;
+            $entry->{'duration'}  = $duration;
+            $entry->{'proto'}     = $proto;
+            my ($addr, $port) = $self->parse_addr($src);
+            $entry->{'srcaddr'} = $addr;
+            $entry->{'srcport'} = $port;
+            my ($addr, $port) = $self->parse_addr($dst);
+            $entry->{'dstaddr'} = $addr;
+            $entry->{'dstport'} = $port;
+            $entry->{'flags'} = $flags;
+            $entry->{'tos'} = $tos;
+            $entry->{'packets'} = $packets;
+            $entry->{'bytes'} = $self->fix_number($bytes);
+            $entry->{'pps'} = $pps;
+            $entry->{'bps'} = $bps;
+            $entry->{'bpp'} = $bpp;
+            $entry->{'flows'} = $flows;
+            return $entry;
+        }
     }
     return {};
 }
