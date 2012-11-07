@@ -57,14 +57,22 @@ sub process {
 
 sub get_firstseen {
     my ($self) = @_;
-    my @t = split(' ',$self->{'firstseenline'});
-    return @t[0]." ".@t[1];
+    my $out="";
+    if (defined($self->{'firstseenline'})){
+        my @t = split(' ',$self->{'firstseenline'});
+        $out = @t[0]." ".@t[1];
+    }
+    return $out;
 }
 
 sub get_lastseen {
     my ($self) = @_;
-    my @t = split(' ',$self->{'lastseenline'});
-    return @t[0]." ".@t[1];
+    my $out ="";
+    if (defined($self->{'lastseenline'})){
+        my @t = split(' ',$self->{'lastseenline'});
+        $out = @t[0]." ".@t[1];
+    }
+    return $out;
 }
 
 1;

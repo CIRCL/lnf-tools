@@ -70,9 +70,17 @@ my $handler = nfdumpseen->new($source);
 my $parser=nfdump->new($handler);
 $parser->parse;
 if ($firstseen == 1){
-    print $handler->get_firstseen."\n";
+    if ($handler->get_firstseen ne ""){
+        print "$source ".$handler->get_firstseen."\n";    
+    }else{
+        print "$source unknown\n";
+    }
 }
 
 if ($lastseen == 1) {
-    print $handler->get_lastseen."\n";
+    if ($handler->get_lastseen ne ""){
+        print "$source ".$handler->get_lastseen."\n";
+    }else{
+        print "$source unknown\n";
+    }
 }
