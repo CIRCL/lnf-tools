@@ -34,7 +34,7 @@ sub new{
     $self->{'lastseen'} = 0;
     $self->{'tcounter'} = 0;
 
-    $self->{'shouldDebug'}=1;
+    $self->{'shouldDebug'}=0;
     #Needed for the heuristic 2
     $self->{'buffer'}=[];
     $self->{'flowcounter'}=0;
