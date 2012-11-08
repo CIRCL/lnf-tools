@@ -80,8 +80,9 @@ sub print_volume_flows{
     }
     for my $vol (sort {$b <=> $a}keys%{$buf}){
         my $tup = $buf->{$vol};
-        my $t = join(',',@{$buf->{$vol}});
-        print "$vol $t\n";
+        for my $t (@{$buf->{$vol}}){
+            print "$vol $t\n";
+        }
     }
 }
 1;
