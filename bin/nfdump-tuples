@@ -38,6 +38,7 @@ OPTIONS
     -h Displays this screen
     -v Shows the exchanged volume between tuples
     -t Specify a treshold of exchanged volume
+    -l Show an IP address per line
 
 EXAMPLE
 
@@ -59,13 +60,15 @@ my $isHelp = undef;
 my $source=undef;
 my $isVolume = undef;
 my $threshold = 0;
-my $result = GetOptions ("help"=>\$isHelp,"volume"=>\$isVolume, "threshold=s"=>\$threshold) or &usage(1);
+my $showline=0;
+my $result = GetOptions ("help"=>\$isHelp,"volume"=>\$isVolume, "threshold=s"=>\$threshold,
+"line"=>\$showline) or &usage(1);
 
 if (defined($isHelp)){
     &usage(1);
 }
 
-my $handler = nfdumptuples->new($isVolume,$threshold);
+my $handler = nfdumptuples->new($isVolume,$threshold, $showline);
 my $parser=nfdump->new($handler);
 $parser->parse();
 if (defined($isVolume)){

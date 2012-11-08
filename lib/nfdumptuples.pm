@@ -23,10 +23,11 @@ use strict;
 package nfdumptuples;
 use Data::Dumper;
 sub new{
-    my ($type,$isVolume,$threshold) = @_;
+    my ($type,$isVolume,$threshold,$showline) = @_;
     my $self={};
     $self->{'isVolume'} = $isVolume;
     $self->{'threshold'} = $threshold;
+    $self->{'showline'} = $showline;
     bless $self, $type;
     $self->{'data'} = {};
     return $self;
@@ -50,6 +51,10 @@ sub process {
             $self->{'$data'}->{$dstaddr}->{$srcaddr} = 0;
         }
         $self->{'data'}->{$srcaddr}->{$dstaddr}+=$fields->{'bytes'};
+        if ($self->{'showline'} == 1){
+            print "$srcaddr\n$dstaddr\n";
+            return;
+        }
         if (!defined($self->{'isVolume'})){
             print $srcaddr,",",$dstaddr,"\n";
         }
